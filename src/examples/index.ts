@@ -6,9 +6,12 @@ import WidgetBase from '@dojo/widget-core/WidgetBase';
 import Editor from '../Editor';
 import project, { Program } from '../project';
 import Runner, { RunnerProperties } from '../Runner';
+import { load } from '../support/themes';
 
 /* path to the project directory */
 const PROJECT_DIRECTORY = '../../../projects/';
+
+let theme: string;
 
 /**
  * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
@@ -132,7 +135,7 @@ class App extends WidgetBase {
 				},
 				key: 'wrap'
 			}, [
-				w(Editor, { filename: this._editorFilename, key: 'editor' }),
+				w(Editor, { filename: this._editorFilename, key: 'editor', options: { theme } }),
 				w(Runner, runnerProperties)
 			])
 		]);
@@ -142,5 +145,8 @@ class App extends WidgetBase {
 /* Mixin a projector to the App and create an instance */
 const projector = new (Projector(App))();
 
-/* Start the projector and append it to the document.body */
-projector.append();
+(async () => {
+	theme = await load('../themes/dojo2.json');
+	/* Start the projector and append it to the document.body */
+	projector.append();
+})();
