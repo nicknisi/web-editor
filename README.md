@@ -321,9 +321,12 @@ appears the general avaialable version lags behind in updating.
 
 This package also includes the following libraries and their dependencies:
 
-* [`monaco-editor`](https://github.com/Microsoft/monaco-editor) - © 2016 Microsoft Corporation. [MIT](http://opensource.org/licenses/MIT) license.
-* [`postcss`](https://github.com/postcss/postcss) - © 2013 Andrey Sitnik. [MIT](http://opensource.org/licenses/MIT) license.
-* [`postcss-cssnext`](https://github.com/MoOx/postcss-cssnext) - © 2014 Maxime Thirouin. [MIT](http://opensource.org/licenses/MIT) license.
-* [`postcss-modules`](https://github.com/css-modules/postcss-modules) - © 2015 - 2016 Alexander Madyankin. [MIT](http://opensource.org/licenses/MIT) license.
+* [`monaco-editor`](https://github.com/Microsoft/monaco-editor) - © 2016 Microsoft Corporation. [MIT][MIT] license.
+* [`postcss`](https://github.com/postcss/postcss) - © 2013 Andrey Sitnik. [MIT][MIT] license.
+* [`postcss-cssnext`](https://github.com/MoOx/postcss-cssnext) - © 2014 Maxime Thirouin. [MIT][MIT] license.
+* [`postcss-modules`](https://github.com/css-modules/postcss-modules) - © 2015 - 2016 Alexander Madyankin. [MIT][MIT] license.
+* [`vscode-material-icon-theme`](https://github.com/PKief/vscode-material-icon-theme) - © 2015 Philipp Kief. [MIT][MIT] license.
 
 © 2017 [JS Foundation](https://js.foundation/). [New BSD](http://opensource.org/licenses/BSD-3-Clause) license.
+
+[MIT]: http://opensource.org/licenses/MIT

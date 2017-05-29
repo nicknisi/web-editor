@@ -6,12 +6,12 @@ import WidgetBase from '@dojo/widget-core/WidgetBase';
 import Editor from '../Editor';
 import project, { Program } from '../project';
 import Runner, { RunnerProperties } from '../Runner';
-import { load } from '../support/themes';
+import { load as loadIcons } from '../support/icons';
+import { load as loadTheme } from '../support/themes';
 
 /* path to the project directory */
 const PROJECT_DIRECTORY = '../../../projects/';
-
-let theme: string;
+let theme: any;
 
 /**
  * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
@@ -146,7 +146,9 @@ class App extends WidgetBase {
 const projector = new (Projector(App))();
 
 (async () => {
-	theme = await load('../themes/dojo2.json');
+	theme = await loadTheme('../themes/dojo2.json');
+	const icons = await loadIcons('../../extensions/vscode-material-icon-theme/out/src/material-icons.json');
+	console.log(icons.file('foobar.d.ts'));
 	/* Start the projector and append it to the document.body */
 	projector.append();
 })();
