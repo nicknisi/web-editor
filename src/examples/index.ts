@@ -1,17 +1,72 @@
 import { assign } from '@dojo/core/lang';
+import { find, includes } from '@dojo/shim/array';
 import { v, w } from '@dojo/widget-core/d';
 import { DNode } from '@dojo/widget-core/interfaces';
 import Projector from '@dojo/widget-core/mixins/Projector';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import Editor from '../Editor';
+import FileBar, { FileItem } from '../FileBar';
+import IconCss from '../IconCss';
+import TreePane, { TreePaneItem } from '../TreePane';
+import * as css from '../styles/treepane.m.css';
 import project, { Program } from '../project';
 import Runner, { RunnerProperties } from '../Runner';
-import { load as loadIcons } from '../support/icons';
+import { IconJson, load as loadIcons } from '../support/icons';
 import { load as loadTheme } from '../support/themes';
 
 /* path to the project directory */
 const PROJECT_DIRECTORY = '../../../projects/';
 let theme: any;
+let icons: IconJson;
+const sourcePath = '../../extensions/vscode-material-icon-theme/out/src/material-icons.json';
+
+function addFile(root: TreePaneItem | undefined, filename: string): TreePaneItem {
+	if (!root) {
+		root = {
+			children: [],
+			id: '',
+			label: '',
+			title: ''
+		};
+	}
+	const endsWithPathMarker = /[\/\\]$/.test(filename);
+	const parts = filename.split(/[\/\\]/);
+	const deliminator = filename.split('/').length === parts.length ? '/' : '\\';
+	const idParts: string[] = [];
+	if (parts[0] === '.') {
+		idParts.push(parts.shift()!);
+		if (root.id === '') {
+			root = {
+				children: [],
+				id: '.',
+				label: '.',
+				title: '.'
+			};
+		}
+	}
+	let parent = root;
+	while (parts.length) {
+		const currentPart = parts[0];
+		if (!parent.children) {
+			parent.children = [];
+		}
+		let item = find(parent.children, (child) => child.label === currentPart);
+		if (!item) {
+			item = {
+				id: idParts.concat(currentPart).join(deliminator),
+				label: currentPart,
+				title: idParts.concat(currentPart).join(deliminator)
+			};
+			parent.children.push(item);
+		}
+		parent = item;
+		idParts.push(parts.shift()!);
+	}
+	if (endsWithPathMarker && !parent.children) {
+		parent.children = [];
+	}
+	return root;
+}
 
 /**
  * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
@@ -19,29 +74,31 @@ let theme: any;
 class App extends WidgetBase {
 	private _compiling = false;
 	private _editorFilename = '';
+	private _expanded = [ '/', '/src' ];
 	private _program: Program | undefined;
 	private _projectValue = 'dojo2-todo-mvc.project.json';
+	private _openFiles: string[] = [];
+	private _selected: string;
 
-	/**
-	 * Returns a set of virtual DOM nodes that are the options for the file select
-	 */
-	private _getFileOptions(): DNode[] {
-		return project.getFileNames()
+	private _getTreeItems(): TreePaneItem {
+		const files = project.getFileNames();
+		return files
 			.sort((a, b) => a < b ? -1 : 1)
-			.map((filename) => {
-				return v('option', { value: filename }, [ filename ]);
-			});
+			.reduce((previous, current) => addFile(previous, current), {
+				id: '',
+				label: '',
+				title: ''
+			} as TreePaneItem);
 	}
 
-	/**
-	 * Handle when the file changes in the dropdown
-	 * @param e The DOM `onchange` event
-	 */
-	private _onchangeFile(e: Event) {
-		e.preventDefault();
-		const select: HTMLSelectElement = e.target as any;
-		this._editorFilename = select.value;
-		this.invalidate();
+	private _getFileItems(): FileItem[] {
+		return this._openFiles.map((filename) => {
+			return {
+				closeable: true,
+				key: filename,
+				label: filename.split(/[\/\\]/).pop()!
+			};
+		});
 	}
 
 	/**
@@ -88,6 +145,31 @@ class App extends WidgetBase {
 			});
 	}
 
+	private _onItemOpen(id: string) {
+		if (project.isLoaded() && project.includes(id) && !includes(this._openFiles, id)) {
+			this._openFiles.push(id);
+		}
+		this.invalidate();
+	}
+
+	private _onItemSelect(id: string) {
+		this._selected = id;
+		if (project.isLoaded() && project.includes(id)) {
+			this._editorFilename = id;
+		}
+		this.invalidate();
+	}
+
+	private _onItemToggle(id: string) {
+		if (includes(this._expanded, id)) {
+			this._expanded.splice(this._expanded.indexOf(id), 1);
+		}
+		else {
+			this._expanded.push(id);
+		}
+		this.invalidate();
+	}
+
 	/**
 	 * Handles when the Runner widget finishes running the project
 	 */
@@ -110,32 +192,54 @@ class App extends WidgetBase {
 			v('button', { type: 'button', name: 'load-project', id: 'load-project', onclick: this._onclickLoad, disabled: isProjectLoaded ? true : false }, [ 'Load' ])
 		]);
 
-		let fileSelect: DNode = null;
+		let projectRun: DNode = null;
 		/* If the project is loaded, then we will render a UI which allows selection of the file to edit and a button to run the project */
 		if (isProjectLoaded) {
-			fileSelect = v('div', { key: 'fileSelect' }, [
-				v('div', [
-					v('label', { for: 'select-file' }, [ 'File to display:' ]),
-					v('select', { name: 'select-file', id: 'select-file', onchange: this._onchangeFile }, this._getFileOptions())
-				]),
-				v('div', [
-					v('button', { type: 'button', name: 'run', id: 'run', onclick: this._onclickRun, disabled: this._compiling ? true : false }, [ 'Run' ])
-				])
+			projectRun = v('div', { key: 'projectRun' }, [
+				v('button', { type: 'button', name: 'run', id: 'run', onclick: this._onclickRun, disabled: this._compiling ? true : false }, [ 'Run' ])
 			]);
 		}
 
 		const runnerProperties: RunnerProperties = assign({}, this._program, { key: 'runner', onRun: this._onRun });
 
-		return v('div', [
+		return v('div', {
+			classes: {
+				'app': true
+			}
+		}, [
+			w(IconCss, {
+				baseClass: css.label,
+				icons,
+				key: 'iconcss',
+				sourcePath
+			}),
 			projectLoad,
-			fileSelect,
+			projectRun,
 			v('div', {
 				classes: {
 					wrap: true
 				},
 				key: 'wrap'
 			}, [
-				w(Editor, { filename: this._editorFilename, key: 'editor', options: { theme } }),
+				v('div', {
+					styles: { flex: '1' }
+				}, [ w(TreePane, {
+					expanded: [ ...this._expanded ],
+					icons,
+					key: 'treepane',
+					selected: this._selected,
+					sourcePath,
+					root: isProjectLoaded ? this._getTreeItems() : undefined,
+					onItemOpen: this._onItemOpen,
+					onItemSelect: this._onItemSelect,
+					onItemToggle: this._onItemToggle
+				}) ]),
+				v('div', {
+					styles: { flex: '1', margin: '1em 0.5em' }
+				}, [
+					this._openFiles.length ? w(FileBar, { activeIndex: 0, files: this._getFileItems(), key: 'filebar' }) : null,
+					w(Editor, { filename: this._editorFilename, key: 'editor', options: { theme } })
+				]),
 				w(Runner, runnerProperties)
 			])
 		]);
@@ -147,8 +251,7 @@ const projector = new (Projector(App))();
 
 (async () => {
 	theme = await loadTheme('../themes/dojo2.json');
-	const icons = await loadIcons('../../extensions/vscode-material-icon-theme/out/src/material-icons.json');
-	console.log(icons.file('foobar.d.ts'));
+	icons = await loadIcons(sourcePath);
 	/* Start the projector and append it to the document.body */
 	projector.append();
 })();
