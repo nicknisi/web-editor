@@ -62,7 +62,7 @@
     "@dojo/routing": "next",
     "@dojo/shim": "next",
     "@dojo/widget-core": "next",
-    "@dojo/widgets": "2.0.0-alpha.23",
+    "@dojo/widgets": "2.0.0-alpha.24",
     "maquette": "kitsonk/maquette#build-master",
     "monaco-editor": "^0.8.3",
     "source-map": "^0.5.6"
