@@ -188,18 +188,6 @@ registerSuite({
 			});
 		},
 
-		async 'upload()'() {
-			const amdProvider = getProvider(requireStub);
-			const result = await amdProvider('src/foo');
-			/* TODO: Remove cast when https://github.com/dojo/core/issues/340 resolved */
-			(result as any).upload().subscribe(() => {
-				new Error('Unexpected');
-			}, (error: Error) => {
-				assert.instanceOf(error, Error, 'should be instance of error');
-				assert.strictEqual(error.message, 'Upload not supported');
-			});
-		},
-
 		'observable task upload'() {
 			const amdProvider = getProvider(requireStub);
 			amdProvider('src/foo').upload.subscribe(() => {

@@ -49,12 +49,6 @@ export class AMDRequireResponse extends Response {
 	text(): Task<string> {
 		return Task.resolve(typeof this._response === 'string' ? this._response : this._response && this._response.toString());
 	}
-
-	upload(): Observable<any> {
-		return new Observable<any>((observer) => {
-			observer.error(new Error('Upload not supported'));
-		});
-	}
 }
 
 /**
