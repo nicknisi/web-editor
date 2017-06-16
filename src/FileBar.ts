@@ -60,13 +60,13 @@ export default class FileBar extends ThemeableBase<FileBarProperties> {
 	}
 
 	private _renderTabButtons(): WNode<TabButton>[] {
-		return this.properties.files.map((file, i) => {
+		const { files, theme } = this.properties;
+		return files.map((file, i) => {
 			const {
 				closeable,
 				disabled,
 				key,
-				label,
-				theme = {}
+				label
 			} = file;
 
 			return w(TabButton, {

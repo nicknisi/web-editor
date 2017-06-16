@@ -4,6 +4,7 @@ import { v, w } from '@dojo/widget-core/d';
 import { DNode } from '@dojo/widget-core/interfaces';
 import Projector from '@dojo/widget-core/mixins/Projector';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
+import * as dojoTheme from '@dojo/widgets/themes/dojo/theme';
 import Editor from '../Editor';
 import FileBar, { FileItem } from '../FileBar';
 import IconCss from '../IconCss';
@@ -237,7 +238,7 @@ class App extends WidgetBase {
 				v('div', {
 					styles: { flex: '1', margin: '1em 0.5em' }
 				}, [
-					this._openFiles.length ? w(FileBar, { activeIndex: 0, files: this._getFileItems(), key: 'filebar' }) : null,
+					this._openFiles.length ? w(FileBar, { activeIndex: 0, files: this._getFileItems(), key: 'filebar', theme: dojoTheme }) : null,
 					w(Editor, { filename: this._editorFilename, key: 'editor', options: { theme } })
 				]),
 				w(Runner, runnerProperties)
