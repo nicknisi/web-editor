@@ -172,6 +172,11 @@ export class Project extends Evented {
 	private _fileMap = new WeakMap<ProjectFile, ProjectFileData>();
 
 	/**
+	 * The worker to use for managing TypeScript services
+	 */
+	private _worker: TypeScriptWorker;
+
+	/**
 	 * Check if there are any emit errors for a given file
 	 * @param services The language services to check
 	 * @param filename The reference filename
@@ -327,7 +332,10 @@ export class Project extends Evented {
 		const typescriptFileUris = this._project.files
 			.filter(({ type }) => type === ProjectFileType.Definition || type === ProjectFileType.TypeScript)
 			.map(({ name }) => this.getFileModel(name).uri);
-		const worker: TypeScriptWorker = await monaco.languages.typescript.getTypeScriptWorker();
+		if (!this._worker) {
+			this._worker = await monaco.languages.typescript.getTypeScriptWorker();
+		}
+		const worker = this._worker;
 		const services = await worker(...typescriptFileUris);
 
 		const output = await Promise.all(typescriptFileUris.map(async (file) => {
