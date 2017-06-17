@@ -4,7 +4,6 @@ import { v, w } from '@dojo/widget-core/d';
 import { DNode } from '@dojo/widget-core/interfaces';
 import Projector from '@dojo/widget-core/mixins/Projector';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
-import * as dojoTheme from '@dojo/widgets/themes/dojo/theme';
 import Editor from '../Editor';
 import FileBar, { FileItem } from '../FileBar';
 import IconCss from '../IconCss';
@@ -14,10 +13,11 @@ import project, { Program } from '../project';
 import Runner, { RunnerProperties } from '../Runner';
 import { IconJson, load as loadIcons } from '../support/icons';
 import { load as loadTheme } from '../support/themes';
+import darkTheme from '../themes/dark/theme';
 
 /* path to the project directory */
 const PROJECT_DIRECTORY = '../../../projects/';
-let theme: any;
+let monacoTheme: any;
 let icons: IconJson;
 const sourcePath = '../../extensions/vscode-material-icon-theme/out/src/material-icons.json';
 
@@ -73,6 +73,7 @@ function addFile(root: TreePaneItem | undefined, filename: string): TreePaneItem
  * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
  */
 class App extends WidgetBase {
+	private _activeFileIndex = 0;
 	private _compiling = false;
 	private _editorFilename = '';
 	private _expanded = [ '/', '/src' ];
@@ -90,6 +91,10 @@ class App extends WidgetBase {
 				label: '',
 				title: ''
 			} as TreePaneItem);
+	}
+
+	private _getActiveFile(): number {
+		return this._activeFileIndex;
 	}
 
 	private _getFileItems(): FileItem[] {
@@ -147,17 +152,21 @@ class App extends WidgetBase {
 	}
 
 	private _onItemOpen(id: string) {
-		if (project.isLoaded() && project.includes(id) && !includes(this._openFiles, id)) {
-			this._openFiles.push(id);
+		this._selected = id;
+		if (project.isLoaded() && project.includes(id)) {
+			if (includes(this._openFiles, id)) {
+				this._activeFileIndex = this._openFiles.indexOf(id);
+			}
+			else {
+				this._activeFileIndex = this._openFiles.push(id) - 1;
+			}
+			this._editorFilename = id;
 		}
 		this.invalidate();
 	}
 
 	private _onItemSelect(id: string) {
 		this._selected = id;
-		if (project.isLoaded() && project.includes(id)) {
-			this._editorFilename = id;
-		}
 		this.invalidate();
 	}
 
@@ -168,6 +177,21 @@ class App extends WidgetBase {
 		else {
 			this._expanded.push(id);
 		}
+		this.invalidate();
+	}
+
+	private _onRequestTabClose(file: FileItem, index: number) {
+		this._openFiles.splice(index, 1);
+		this._activeFileIndex = this._activeFileIndex >= this._openFiles.length ?
+			this._openFiles.length - 1 : this._activeFileIndex === index ?
+				index : this._activeFileIndex ?
+					this._activeFileIndex - 1 : 0;
+		this._editorFilename = this._openFiles[this._activeFileIndex];
+		this.invalidate();
+	}
+
+	private _onRequestTabChange(file: FileItem, index: number) {
+		this._selected = this._editorFilename = this._openFiles[this._activeFileIndex = index];
 		this.invalidate();
 	}
 
@@ -201,7 +225,7 @@ class App extends WidgetBase {
 			]);
 		}
 
-		const runnerProperties: RunnerProperties = assign({}, this._program, { key: 'runner', onRun: this._onRun });
+		const runnerProperties: RunnerProperties = assign({}, this._program, { key: 'runner', onRun: this._onRun, theme: darkTheme });
 
 		return v('div', {
 			classes: {
@@ -209,7 +233,7 @@ class App extends WidgetBase {
 			}
 		}, [
 			w(IconCss, {
-				baseClass: css.label,
+				baseClass: css.labelFixed,
 				icons,
 				key: 'iconcss',
 				sourcePath
@@ -233,13 +257,26 @@ class App extends WidgetBase {
 					root: isProjectLoaded ? this._getTreeItems() : undefined,
 					onItemOpen: this._onItemOpen,
 					onItemSelect: this._onItemSelect,
-					onItemToggle: this._onItemToggle
+					onItemToggle: this._onItemToggle,
+					theme: darkTheme
 				}) ]),
 				v('div', {
-					styles: { flex: '1', margin: '1em 0.5em' }
+					styles: { flex: '1', margin: '0 0.5em' }
 				}, [
-					this._openFiles.length ? w(FileBar, { activeIndex: 0, files: this._getFileItems(), key: 'filebar', theme: dojoTheme }) : null,
-					w(Editor, { filename: this._editorFilename, key: 'editor', options: { theme } })
+					this._openFiles.length ? w(FileBar, {
+						activeIndex: this._getActiveFile(),
+						files: this._getFileItems(),
+						key: 'filebar',
+						theme: darkTheme,
+						onRequestTabClose: this._onRequestTabClose,
+						onRequestTabChange: this._onRequestTabChange
+					}) : null,
+					w(Editor, {
+						filename: this._editorFilename,
+						key: 'editor',
+						options: { theme: monacoTheme },
+						theme: darkTheme
+					})
 				]),
 				w(Runner, runnerProperties)
 			])
@@ -251,7 +288,7 @@ class App extends WidgetBase {
 const projector = new (Projector(App))();
 
 (async () => {
-	theme = await loadTheme('../themes/dojo2.json');
+	monacoTheme = await loadTheme('../themes/editor-dark.json');
 	icons = await loadIcons(sourcePath);
 	/* Start the projector and append it to the document.body */
 	projector.append();

@@ -73,14 +73,14 @@ export class Row extends ThemeableBase<RowProperties> {
 			ondblclick: this._ondblclick
 		}, [
 			v('div', {
-				classes: this.classes().fixed(css.content)
+				classes: this.classes(css.content)
 			}, [
 				v('div', {
-					classes: this.classes().fixed(css.label, this.properties.class || null),
+					classes: this.classes(css.label).fixed(css.labelFixed, this.properties.class || null),
 					title: this.properties.title
 				}, [
 					v('a', {
-						classes: this.classes().fixed(css.labelName)
+						classes: this.classes(css.labelName)
 					}, [ this.properties.label ])
 				])
 			])
@@ -195,7 +195,8 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 
 	private _renderChild(item: TreePaneItem, level: number): WNode<Row> {
 		const { children, id: key, label, title } = item;
-		const expanded = includes(this.properties.expanded, key);
+		const { expanded: propsExpanded, theme } = this.properties;
+		const expanded = includes(propsExpanded, key);
 		const hasChildren = Boolean(children);
 		return w(Row, {
 			class: hasChildren ? this._resolver.folder(label, expanded) : this._resolver.file(label),
@@ -206,6 +207,8 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 			label,
 			selected: this.properties.selected === key,
 			title,
+			theme,
+
 			onClick: this._onRowClick,
 			onDblClick: this._onRowDblClick
 		});
@@ -260,7 +263,8 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 				icons,
 				key,
 				label,
-				sourcePath
+				sourcePath,
+				theme
 			},
 			_visibleRowCount
 		} = this;
@@ -302,6 +306,7 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 				size,
 				sliderSize,
 				visible: _scrollVisible,
+				theme,
 
 				onScroll: _onScrollbarScroll
 			})

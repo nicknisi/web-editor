@@ -90,7 +90,7 @@ export default class Editor extends EditorBase<EditorProperties> {
 		this._setModel();
 		/* TODO: Create single node when https://github.com/dojo/widget-core/issues/553 resolved */
 		return v('div', {
-			classes: this.classes(css.base)
-		}, [ w(this._EditorDom, { key: 'editor' }) ]);
+			classes: this.classes(css.root)
+		}, [ this.properties.filename ? w(this._EditorDom, { key: 'editor' }) : null ]);
 	}
 }

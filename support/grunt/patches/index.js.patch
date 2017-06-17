@@ -1,13 +1,17 @@
 diff --git a/examples/index.js b/examples/index.js
-index 86921c2..f3b8879 100644
+index 0185477..7c59347 100644
 --- a/examples/index.js
 +++ b/examples/index.js
-@@ -64,7 +64,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
-     var Runner_1 = require("../Runner");
+@@ -71,10 +71,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
      var themes_1 = require("../support/themes");
+     var theme_1 = require("../themes/dark/theme");
      /* path to the project directory */
 -    var PROJECT_DIRECTORY = '../../../projects/';
 +    var PROJECT_DIRECTORY = '../projects/';
-     var theme;
-     /**
-      * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
+     var monacoTheme;
+     var icons;
+-    var sourcePath = '../../extensions/vscode-material-icon-theme/out/src/material-icons.json';
++    var sourcePath = '../extensions/vscode-material-icon-theme/out/src/material-icons.json';
+     function addFile(root, filename) {
+         if (!root) {
+             root = {

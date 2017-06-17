@@ -1,0 +1,144 @@
+@import './variables.css';
+
+.root {
+	font: var(--base-font);
+	box-sizing: border-box;
+}
+
+.root * {
+	box-sizing: border-box;
+}
+
+.tabButton {
+	border-top: var(--border-thick) solid transparent;
+	border-left: var(--border-thin) solid transparent;
+	border-right: var(--border-thin) solid transparent;
+	text-align: center;
+	padding: 8px 24px 8px 24px;
+	display: inline-block;
+	vertical-align: top;
+	width: var(--tab-width);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--dark-light-gray);
+	cursor: pointer;
+	position: relative;
+	top: 1px;
+	z-index: 1;
+	background: var(--dark-black);
+	outline: none;
+}
+
+.tabButton:focus:not(.disabledTabButton) {
+	font-weight: bold;
+}
+
+.activeTabButton {
+	border-top-color: var(--dark-light-blue);
+	border-left-color: var(--dark-shade-gray);
+	border-right-color: var(--dark-shade-gray);
+	z-index: 2;
+}
+
+.disabledTabButton {
+	font-style: italic;
+	cursor: default;
+	color: var(--dark-gray);
+}
+
+.close {
+	background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='3 3 16 16'%3E%3Cpath fill='%23e8e8e8' d='M12.597 11.042l2.803 2.803-1.556 1.555-2.802-2.802L8.239 15.4l-1.556-1.555 2.802-2.803-2.802-2.803 1.555-1.556 2.804 2.803 2.803-2.803L15.4 8.239z'/%3E%3C/svg%3E") 50% no-repeat;
+	height: 16px;
+	width: 16px;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	right: 5px;
+	cursor: pointer;
+	font-size: 0;
+	border: none;
+	outline: none;
+}
+
+.close:focus {
+	box-shadow: var(--input-focus-shadow);
+}
+
+.tab {
+	position: relative;
+	padding: var(--container-padding);
+	border: var(--border-thin) solid var(--dark-shade-gray);
+	z-index: 1;
+	background: var(--dark-black);
+	min-height: var(--min-container-height);
+}
+
+.alignLeft .tabs {
+	display: inline-block;
+	vertical-align: top;
+	width: calc(100% - var(--tab-width));
+}
+
+.alignLeft .tabButtons {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.alignLeft .tabButton {
+	border-top: var(--border-thin) solid transparent;
+	border-left: var(--border-thick) solid transparent;
+	border-bottom: var(--border-thin) solid transparent;
+	border-right: none;
+	display: block;
+	top: 0;
+	left: 1px;
+}
+
+.alignLeft .activeTabButton {
+	border-top-color: var(--dark-shade-gray);
+	border-left-color: var(--dark-blue);
+	border-bottom-color: var(--dark-shade-gray);
+}
+
+.alignBottom .tabButton {
+	border-top: none;
+	border-bottom: var(--border-thick) solid transparent;
+	top: -1px;
+	z-index: 0;
+}
+
+.alignBottom .activeTabButton {
+	border-top-color: var(--dark-shade-gray);
+	border-bottom-color: var(--dark-blue);
+	z-index: 1;
+}
+
+.alignRight .tabs {
+	display: inline-block;
+	vertical-align: top;
+	width: calc(100% - var(--tab-width));
+}
+
+.alignRight .tabButtons {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.alignRight .tabButton {
+	border-top: var(--border-thin) solid transparent;
+	border-right: var(--border-thick) solid transparent;
+	border-bottom: var(--border-thin) solid transparent;
+	border-left: none;
+	display: block;
+	top: 0;
+	left: -1px;
+	z-index: 0;
+}
+
+.alignRight .activeTabButton {
+	border-top-color: var(--dark-shade-gray);
+	border-right-color: var(--dark-blue);
+	border-bottom-color: var(--dark-shade-gray);
+	z-index: 1;
+}

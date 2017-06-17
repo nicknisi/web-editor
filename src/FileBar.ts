@@ -1,6 +1,6 @@
 import uuid from '@dojo/core/uuid';
 import { v, w } from '@dojo/widget-core/d';
-import { WNode } from '@dojo/widget-core/interfaces';
+import { DNode, WNode } from '@dojo/widget-core/interfaces';
 import { theme, ThemeableMixin, ThemeableProperties } from '@dojo/widget-core/mixins/Themeable';
 import { WidgetBase } from '@dojo/widget-core/WidgetBase';
 import TabButton from '@dojo/widgets/tabpane/TabButton';
@@ -19,7 +19,7 @@ export interface FileItem extends ThemeableProperties {
 	closeable?: boolean;
 	disabled?: boolean;
 	key: string;
-	label: string;
+	label: DNode;
 }
 
 export interface FileBarProperties extends ThemeableProperties {
@@ -66,7 +66,7 @@ export default class FileBar extends ThemeableBase<FileBarProperties> {
 				closeable,
 				disabled,
 				key,
-				label
+				label = null
 			} = file;
 
 			return w(TabButton, {
@@ -86,9 +86,7 @@ export default class FileBar extends ThemeableBase<FileBarProperties> {
 				onRightArrowPress: this._onRightArrowPress,
 				onUpArrowPress: this._onUpArrowPress,
 				theme
-			}, [
-				label || null
-			]);
+			}, [ label ]);
 		});
 	}
 
