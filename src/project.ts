@@ -134,6 +134,20 @@ function getLanguageFromType(type: ProjectFileType): string {
 	}
 }
 
+type JsxEmit = monaco.languages.typescript.JsxEmit;
+const JsxEmit = monaco.languages.typescript.JsxEmit;
+
+function getJsxEmit(type: string | undefined): JsxEmit {
+	switch (type) {
+	case 'preserve':
+		return JsxEmit.Preserve;
+	case 'react':
+		return JsxEmit.React;
+	default:
+		return JsxEmit.None;
+	}
+}
+
 type ScriptTarget = monaco.languages.typescript.ScriptTarget;
 const ScriptTarget = monaco.languages.typescript.ScriptTarget;
 
@@ -253,9 +267,11 @@ export class Project extends Evented {
 		const options: CompilerOptions = {};
 
 		/* copied from tsconfig.json */
-		const { experimentalDecorators, lib, noImplicitAny, noImplicitThis, noImplicitReturns, noLib, noUnusedLocals, noUnusedParameters, strictNullChecks, target, types } = compilerOptions;
+		const { experimentalDecorators, jsx, jsxFactory, lib, noImplicitAny, noImplicitThis, noImplicitReturns, noLib, noUnusedLocals, noUnusedParameters, strict, strictNullChecks, target, types } = compilerOptions;
 		assign(options, <CompilerOptions> {
 			experimentalDecorators,
+			jsx: getJsxEmit(jsx),
+			jsxFactory,
 			lib,
 			noImplicitAny,
 			noImplicitThis,
@@ -263,6 +279,7 @@ export class Project extends Evented {
 			noLib,
 			noUnusedLocals,
 			noUnusedParameters,
+			strict,
 			strictNullChecks,
 			target: getScriptTarget(target),
 			types
