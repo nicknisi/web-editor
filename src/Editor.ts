@@ -30,25 +30,81 @@ export interface EditorProperties extends WidgetProperties, ThemeableProperties 
 	onEditorLayout?(): void;
 }
 
-const EditorBase = ThemeableMixin(WidgetBase);
+export interface TextEditorOptions extends monaco.editor.IEditorOptions {
+
+	/**
+	 * Text editor selection.
+	 */
+	selection?: {
+		startLineNumber: number;
+		startColumn: number;
+		endLineNumber?: number;
+		endColumn?: number;
+	};
+}
+
+export interface ResourceInput {
+
+	/**
+	 * The resource URL of the resource to open.
+	 */
+	resource: monaco.Uri;
+
+	/**
+	 * The encoding of the text input if known.
+	 */
+	encoding?: string;
+
+	/**
+	 * Optional options to use when opening the text input.
+	 */
+	options?: TextEditorOptions;
+}
+
+export interface TextEditorModel extends monaco.editor.IEditorModel {
+	textEditorModel: any;
+}
+
+export class EditorService {
+	_serviceBrand: any;
+	openEditor(input: ResourceInput, sideBySide?: boolean): Promise<monaco.editor.IEditor> {
+		console.log('openEditor', input);
+		return Promise.resolve({});
+	}
+	resolveEditor(input: ResourceInput, refresh?: boolean): Promise<TextEditorModel> {
+		console.log('resolveEditor', input);
+		return Promise.resolve({});
+	}
+}
+
+const ThemeableBase = ThemeableMixin(WidgetBase);
 
 @theme(css)
-export default class Editor extends EditorBase<EditorProperties> {
+export default class Editor extends ThemeableBase<EditorProperties> {
 	private _editor: monaco.editor.IStandaloneCodeEditor | undefined;
+	private _editorService: EditorService;
 	private _EditorDom: Constructor<WidgetBase<VirtualDomProperties & WidgetProperties>>;
 	private _didChangeHandle: monaco.IDisposable;
-	private _onAfterRender = () => {
+	private _onAfterRender = async () => {
 		if (!this._editor) {
-			this._editor = globalMonaco.editor.create(this._root, this.properties.options);
-			this._didChangeHandle = this._editor.onDidChangeModelContent(debounce(this._onDidChangeModelContent, 1000));
-			const { onEditorInit } = this.properties;
+			const {
+				_onDidChangeModelContent,
+				_root,
+				properties: {
+					onEditorInit,
+					options
+				}
+			} = this;
+			const editorService = this._editorService = new EditorService();
+			const editor = this._editor = globalMonaco.editor.create(_root, options, { editorService });
+			const didChangeHandle = this._didChangeHandle = editor.onDidChangeModelContent(debounce(_onDidChangeModelContent, 1000));
 			this._setModel();
-			onEditorInit && onEditorInit(this._editor);
+			onEditorInit && onEditorInit(editor);
 
 			this.own(createHandle(() => {
-				if (this._editor) {
-					this._editor.dispose();
-					this._didChangeHandle.dispose();
+				if (editor) {
+					editor.dispose();
+					didChangeHandle.dispose();
 				}
 			}));
 		}

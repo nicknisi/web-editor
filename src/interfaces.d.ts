@@ -1,5 +1,5 @@
 import { ProjectFileType } from '@dojo/cli-export-project/interfaces/project.json';
-import { EmitOutput, LanguageService, Diagnostic } from 'typescript';
+import { Diagnostic, EmitOutput, LanguageService, QuickInfo } from 'typescript';
 
 export interface EmitFile {
 	name: string;
@@ -12,6 +12,7 @@ export interface PromiseLanguageService {
 	getSemanticDiagnostics(fileName: string): Promise<Diagnostic[]>;
 	getCompilerOptionsDiagnostics(): Promise<Diagnostic[]>;
 	getEmitOutput(fileName: string, emitOnlyDtsFiles?: boolean): Promise<EmitOutput>;
+	getQuickInfoAtPosition(fileName: string, position: number): Promise<QuickInfo>;
 }
 
 export interface TypeScriptWorker {
