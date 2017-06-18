@@ -210,9 +210,9 @@ class App extends WidgetBase {
 		const projectLoad = v('div', { key: 'projectLoad' }, [
 			v('label', { for: 'project' }, [ 'Project to load:' ]),
 			v('select', { type: 'text', name: 'project', id: 'project', onchange: this._onchangeProject, disabled: isProjectLoaded ? true : false }, [
-				v('option', { value: 'dojo-test-app.project.json' }, [ 'Dojo2 Hello World' ]),
-				v('option', { value: 'dojo2-todo-mvc.project.json', selected: true }, [ 'Dojo2 Todo MVC' ]),
-				v('option', { value: 'dojo2-todo-mvc-kitchensink.project.json' }, [ 'Dojo2 Kitchensink Todo MVC' ])
+				v('option', { value: 'dojo-test-app.project.json' }, [ 'Dojo 2 Hello World' ]),
+				v('option', { value: 'dojo2-todo-mvc.project.json', selected: true }, [ 'Dojo 2 Todo MVC' ]),
+				v('option', { value: 'dojo2-todo-mvc-kitchensink.project.json' }, [ 'Dojo 2 Kitchensink Todo MVC' ])
 			]),
 			v('button', { type: 'button', name: 'load-project', id: 'load-project', onclick: this._onclickLoad, disabled: isProjectLoaded ? true : false }, [ 'Load' ])
 		]);
