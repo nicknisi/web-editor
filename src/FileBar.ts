@@ -34,6 +34,7 @@ export interface FileBarProperties extends ThemeableProperties {
 @theme(css)
 export default class FileBar extends ThemeableBase<FileBarProperties> {
 	private _id = uuid();
+	// private _callTabFocus = false;
 
 	private _onDownArrowPress() {
 		const { alignButtons } = this.properties;
@@ -70,6 +71,8 @@ export default class FileBar extends ThemeableBase<FileBarProperties> {
 			} = file;
 
 			return w(TabButton, {
+				// TODO: uncomment when TabButton published with https://github.com/dojo/widgets/pull/241
+				// callFocus: this._callTabFocus && i === this.properties.activeIndex,
 				active: i === this.properties.activeIndex,
 				closeable,
 				controls: `${ this._id }-tab-${i}`,
@@ -80,6 +83,7 @@ export default class FileBar extends ThemeableBase<FileBarProperties> {
 				onClick: this.selectIndex,
 				onCloseClick: this.closeIndex,
 				onEndPress: this.selectLastIndex,
+				// onFocusCalled: () => this._callTabFocus = false,
 				onHomePress: this.selectFirstIndex,
 				onDownArrowPress: this._onDownArrowPress,
 				onLeftArrowPress: this._onLeftArrowPress,

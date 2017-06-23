@@ -102,6 +102,12 @@ enum ScriptTarget {
 	Latest = 5
 }
 
+enum JsxEmit {
+	None = 0,
+	Preserve = 1,
+	React = 2
+}
+
 export default {
 	editor: {
 		createModel: createModelSpy
@@ -109,6 +115,7 @@ export default {
 	languages: {
 		typescript: {
 			getTypeScriptWorker: getTypeScriptWorkerSpy,
+			JsxEmit,
 			ModuleKind,
 			ModuleResolutionKind,
 			ScriptTarget,

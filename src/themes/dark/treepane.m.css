@@ -83,3 +83,7 @@
 .row.selected {
 	background-color: var(--dark-light-black);
 }
+
+.row:hover:not(.selected) {
+	background-color: var(--dark-med-black);
+}

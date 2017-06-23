@@ -1,6 +1,7 @@
 import './base64';
 import './css';
 import './DOMParser';
+import './events';
 import './gists';
 import './json';
 import './postcss';

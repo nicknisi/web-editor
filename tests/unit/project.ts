@@ -108,7 +108,10 @@ registerSuite({
 			module: 2,
 			moduleResolution: 2,
 			noEmitHelpers: true,
-			sourceMap: true
+			sourceMap: true,
+			jsx: 0,
+			jsxFactory: undefined,
+			strict: undefined
 		});
 	},
 

@@ -4,7 +4,8 @@ import global from '@dojo/core/global';
 import { assign } from '@dojo/core/lang';
 import { Handle } from '@dojo/interfaces/core';
 import harness, { Harness } from '@dojo/test-extras/harness';
-import { HNode, WNode } from '@dojo/widget-core/interfaces';
+import { HNode, WNode, WidgetProperties, VirtualDomProperties } from '@dojo/widget-core/interfaces';
+import WidgetBase from '@dojo/widget-core/WidgetBase';
 import loadModule from '../support/loadModule';
 import * as css from '../../src/styles/editor.m.css';
 import UnitUnderTest, { EditorProperties } from '../../src/Editor';
@@ -41,7 +42,9 @@ function getMonacoEditor(properties: Partial<EditorProperties> = {}): Promise<mo
 		}
 
 		widget.setProperties(assign(properties, { onEditorInit }));
-		widget.getRender();
+		widget.callListener('onAttached', {
+			key: 'editor'
+		});
 	});
 }
 
@@ -107,19 +110,31 @@ registerSuite({
 		mockHandle.destroy();
 	},
 
-	'expected render'() {
+	'expected render, no filename'() {
 		/* decomposing this as the DomWrapper constructor function is not exposed and therefore can't put it in the
 		 * expected render */
 		const render = widget.getRender() as HNode;
 		assert.strictEqual(render.tag, 'div', 'should be a "div" tag');
 		assert.deepEqual(render.properties.classes, widget.classes(css.root)(), 'should have proper classes');
-		assert.lengthOf(render.children, 1, 'should have only one child');
-		assert.isFunction((render.children[0] as WNode).widgetConstructor, 'should be a function');
-		assert.strictEqual((render.children[0] as WNode).properties.key, 'editor', 'should have editor key set');
+		assert.lengthOf(render.children, 0, 'should have no children');
+		assert.strictEqual(render.properties.key, 'editor', 'should have editor key set');
+	},
+
+	'expected render, with filename'() {
+		/* decomposing this as the DomWrapper constructor function is not exposed and therefore can't put it in the
+		 * expected render */
+		widget.setProperties({
+			filename: 'foo/bar.ts'
+		});
+		const render = widget.getRender() as WNode<WidgetBase<WidgetProperties & VirtualDomProperties>>;
+		assert.deepEqual((render.properties.classes as any)(), widget.classes(css.root)(), 'should have proper classes');
+		assert.lengthOf(render.children, 0, 'should have no children');
+		assert.isFunction(render.widgetConstructor, 'should have a widget constructor');
+		assert.strictEqual(render.properties.key, 'editor', 'should have editor key set');
 	},
 
 	async 'editor is initalized'() {
-		const editor = await getMonacoEditor();
+		const editor = await getMonacoEditor({ filename: 'foo/bar.ts' });
 		const createSpy = monaco.editor.create as SinonSpy;
 		assert(editor, 'editor should exist');
 		assert.isTrue(createSpy.called, 'create should have been called');
@@ -128,6 +143,7 @@ registerSuite({
 
 	async 'editor passes options'() {
 		await getMonacoEditor({
+			filename: './src/main.ts',
 			options: {
 				theme: 'vs-code-pretty'
 			}
@@ -137,19 +153,15 @@ registerSuite({
 
 	async 'sets the proper file'() {
 		projectFileMap['./src/main.ts'] = true;
-		await getMonacoEditor();
-		widget.setProperties({
+		await getMonacoEditor({
 			filename: './src/main.ts'
 		});
-		assert.isFalse(setModelStub.called, 'should not have been called yet');
-		widget.getRender();
 		assert.isTrue(setModelStub.called, 'should have set the model on the editor');
 		assert.strictEqual(setModelStub.lastCall.args[0], `model('./src/main.ts')`, 'should have set the proper model');
 	},
 
 	async 'setting to missing file is a no-op'() {
-		await getMonacoEditor();
-		widget.setProperties({
+		await getMonacoEditor({
 			filename: './src/main.ts'
 		});
 		assert.isFalse(setModelStub.called, 'should not have been called yet');
@@ -163,14 +175,10 @@ registerSuite({
 			called++;
 		}
 		await getMonacoEditor({
-			onEditorLayout
-		});
-		const currentCallCount = called;
-		widget.setProperties({
 			filename: './src/foo.ts',
 			onEditorLayout
 		});
-		widget.getRender();
+		const currentCallCount = called;
 		return new Promise((resolve, reject) => {
 			setTimeout(() => {
 				try {
@@ -186,8 +194,7 @@ registerSuite({
 
 	async '_onDidChangeModelContent'(this: any) {
 		projectFileMap['./src/foo.ts'] = true;
-		await getMonacoEditor();
-		widget.setProperties({
+		await getMonacoEditor({
 			filename: './src/foo.ts'
 		});
 		widget.getRender();

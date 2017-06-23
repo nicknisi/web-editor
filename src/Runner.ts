@@ -11,24 +11,31 @@ import DOMParser from './support/DOMParser';
 import { wrapCode } from './support/sourceMap';
 
 /**
- * @type RunnerProperties
- *
  * Properties that can be set on a Runner widget
- *
- * @property loader A URI that points to an AMD loader which will be used when running the program.
- *                  Defaults to `https://unpkg.com/@dojo/loader/loader.min.js`
- * @property src A URI that points to the `src` to set on the Runner's `iframe`. Defaults to
- *               `../support/blank.html`
- * @property onError A method that will be called whenever there is an error in the running program
- * @property onRun A method that will be called when the `Runner` has fully loaded the program.  *Note* this does not
- *                 represent the state of the running program, it simply indicates that the `Runner` no longer has
- *                 involvement in the process of loading the program
  */
 export interface RunnerProperties extends Partial<Program>, WidgetProperties, ThemeableProperties {
+	/**
+	 * A URI that points to an AMD loader which will be used when running the program.
+	 * Defaults to `https://unpkg.com/@dojo/loader/loader.min.js`
+	 */
 	loader?: string;
+
+	/**
+	 * A URI that points to the `src` to set on the Runner's `iframe`. Defaults to
+	 * `../support/blank.html`
+	 */
 	src?: string;
 
+	/**
+	 * A method that will be called whenever there is an error in the running program
+	 */
 	onError?(err: Error): void;
+
+	/**
+	 * A method that will be called when the `Runner` has fully loaded the program.  *Note* this does not
+	 * represent the state of the running program, it simply indicates that the `Runner` no longer has
+	 * involvement in the process of loading the program
+	 */
 	onRun?(): void;
 }
 
@@ -257,13 +264,13 @@ async function writeIframeDoc(iframe: HTMLIFrameElement, source: string, errorLi
 	});
 }
 
-const RunnerBase = ThemeableMixin(WidgetBase);
+const ThemeableBase = ThemeableMixin(WidgetBase);
 
 /**
  * A widget which will render its properties into a _runnable_ application within an `iframe`
  */
 @theme(css)
-export default class Runner extends RunnerBase<RunnerProperties> {
+export default class Runner extends ThemeableBase<RunnerProperties> {
 	private _iframe: HTMLIFrameElement;
 	private _IframeDom: Constructor<WidgetBase<VirtualDomProperties & WidgetProperties>>;
 	private _onIframeError = (evt: ErrorEvent) => {
@@ -276,10 +283,6 @@ export default class Runner extends RunnerBase<RunnerProperties> {
 	constructor() {
 		super();
 		const iframe = this._iframe = document.createElement('iframe');
-		iframe.setAttribute('src', DEFAULT_IFRAME_SRC);
-
-		/* TODO: Remove when https://github.com/dojo/widget-core/issues/553 resolved */
-		iframe.classList.add(css.iframe);
 
 		this._IframeDom = DomWrapper(iframe);
 		this.own(createHandle(() => {
@@ -311,6 +314,7 @@ export default class Runner extends RunnerBase<RunnerProperties> {
 		return v('div', {
 			classes: this.classes(css.root)
 		}, [ w(this._IframeDom, {
+			classes: this.classes(css.iframe),
 			key: 'runner',
 			src: this.properties.src || DEFAULT_IFRAME_SRC
 		}) ]);

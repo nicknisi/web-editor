@@ -1,54 +1,166 @@
 import { includes } from '@dojo/shim/array';
 import Map from '@dojo/shim/Map';
 import { v, w } from '@dojo/widget-core/d';
-import { WNode } from '@dojo/widget-core/interfaces';
+import { DNode, WNode } from '@dojo/widget-core/interfaces';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import { theme, ThemeableMixin, ThemeableProperties } from '@dojo/widget-core/mixins/Themeable';
-import ScrollBar from './ScrollBar';
+import { Keys } from '@dojo/widgets/common/util';
+import ScrollBar from './support/ScrollBar';
 import * as css from './styles/treepane.m.css';
 import { getAbsolutePosition } from './support/events';
 import { IconJson, IconResolver } from './support/icons';
 
+/**
+ * The interface for items that can be rendered in the `TreePane`.
+ *
+ * There needs to be a single `root` item which the rest of the tree is built from.
+ */
 export interface TreePaneItem {
+	/**
+	 * Any children that are owned by
+	 */
 	children?: TreePaneItem[];
-	class?: string;
+
+	/**
+	 * A unique id for the whole tree.
+	 */
 	id: string;
-	label: string;
+
+	/**
+	 * The label for the item, if a type of `string`, it will be used with the `IconResolver` to determine the
+	 * specific icon used.
+	 */
+	label: DNode;
+
+	/**
+	 * The value displayed when the mouse hovers over an item.  Typically this would be set to the full path of
+	 * a file.
+	 */
 	title: string;
 }
 
+/**
+ * Properties that can be set for `TreePane`
+ */
 export interface TreePaneProperties extends ThemeableProperties {
+	/**
+	 * An array of item IDs that are currently exapanded.
+	 */
 	expanded: string[];
+
+	/**
+	 * An object that provides information about icons to use with an item
+	 */
 	icons?: IconJson;
+
+	/**
+	 * The label for the widget from an accessability perspective
+	 */
 	label?: string;
+
+	/**
+	 * The ID of the currently selected item
+	 */
 	selected?: string;
+
+	/**
+	 * Should the root be shown?  Defaults to `false`.
+	 */
 	showRoot?: boolean;
+
+	/**
+	 * The path to the root of the icon
+	 */
 	sourcePath?: string;
+
+	/**
+	 * The root item of the tree
+	 */
 	root?: TreePaneItem;
 
-	onItemOpen?(key?: string): void;
-	onItemSelect?(key?: string): void;
-	onItemToggle?(key?: string): void;
+	/**
+	 * Called when an item is opened (double clicked or enter pressed)
+	 * @param id The ID of the item that is attempting to be opened
+	 */
+	onItemOpen?(id?: string): void;
+
+	/**
+	 * Called when an item is being selected (clicked or navigated to via the keyboard)
+	 *
+	 * The controlling application should change the `selected` property if the selection is valid
+	 * to update the visual state of the widget
+	 * @param id The ID of the item that is attempting to be selected
+	 */
+	onItemSelect?(id?: string): void;
+
+	/**
+	 * Called on a parent item when the item's expanded state is being toggled.
+	 *
+	 * The controlling application should add or remove the ID from the `expanded` array property to
+	 * update the visual state of the widget
+	 * @param id The ID of the item that is attempting to have its expanded state toggled
+	 */
+	onItemToggle?(id?: string): void;
 }
 
 const ROW_HEIGHT = 22;
+const ROW_LEVEL_LEFT_PADDING = 12;
+
 const ThemeableBase = ThemeableMixin(WidgetBase);
 
+/**
+ * Properties for the internal `Row` class.
+ */
 export interface RowProperties extends ThemeableProperties {
+	/**
+	 * A custom class which effects the display of the icon for the row
+	 */
 	class?: string;
+
+	/**
+	 * If a parent row, should it be rendered in an expanded or unexpanded state?
+	 */
 	expanded?: boolean;
+
+	/**
+	 * Does the row have children?
+	 */
 	hasChildren?: boolean;
-	label: string;
+
+	/**
+	 * The label for the row, typically a `string`
+	 */
+	label: DNode;
+
+	/**
+	 * At what level in the UI should the row display itself at
+	 */
 	level: number;
+
+	/**
+	 * Is the row in a selected state or not
+	 */
 	selected?: boolean;
+
+	/**
+	 * The text that should be displayed when the row is hovered over
+	 */
 	title?: string;
 
+	/**
+	 * Called when the row is clicked
+	 */
 	onClick?(key?: string): void;
+
+	/**
+	 * Called when the row is double clicked
+	 */
 	onDblClick?(key?: string): void;
 }
 
-const ROW_LEVEL_LEFT_PADDING = 12;
-
+/**
+ * The internal widget class which renders a row in the `TreePane`
+ */
 @theme(css)
 export class Row extends ThemeableBase<RowProperties> {
 	private _onclick() {
@@ -59,47 +171,84 @@ export class Row extends ThemeableBase<RowProperties> {
 	}
 
 	render() {
-		const classes = [ css.row, this.properties.selected && css.selected || null, this.properties.hasChildren && css.hasChildren || null, this.properties.expanded && css.expanded || null ];
+		const {
+			_onclick,
+			_ondblclick,
+			properties: {
+				class: rowClass,
+				expanded,
+				hasChildren,
+				label,
+				level,
+				selected,
+				title
+			}
+		} = this;
+		const classes = [ css.row, selected && css.selected || null, hasChildren && css.hasChildren || null, expanded && css.expanded || null ];
 		return v('div', {
-			'aria-level': String(this.properties.level),
-			'aria-selected': this.properties.selected,
+			'aria-level': String(level),
+			'aria-selected': selected,
 			'aria-role': 'treeitem',
 			classes: this.classes(...classes),
 			role: 'treeitem',
 			styles: {
-				'padding-left': String(this.properties.level * ROW_LEVEL_LEFT_PADDING) + 'px'
+				'padding-left': String(level * ROW_LEVEL_LEFT_PADDING) + 'px'
 			},
-			onclick: this._onclick,
-			ondblclick: this._ondblclick
+			onclick: _onclick,
+			ondblclick: _ondblclick
 		}, [
 			v('div', {
 				classes: this.classes(css.content)
 			}, [
 				v('div', {
-					classes: this.classes(css.label).fixed(css.labelFixed, this.properties.class || null),
-					title: this.properties.title
+					classes: this.classes(css.label).fixed(css.labelFixed, rowClass || null),
+					title: title
 				}, [
 					v('a', {
 						classes: this.classes(css.labelName)
-					}, [ this.properties.label ])
+					}, [ label ])
 				])
 			])
 		]);
 	}
 }
 
+/**
+ * An internal interface for maintaining navigation state of the `TreePane` in order to facilitate keyboard
+ * navigation.
+ */
+interface TreePaneNavigationState {
+	next: string;
+	previous: string;
+	selected: string;
+	selectedPosition: number;
+	start: number;
+	end: number;
+}
+
+/**
+ * A widget class which takes a tree of items with a root specified as the `root` property and renders them into
+ * a hierarchical set of rows, providing events that allow expansion/collapse of parent nodes, scrolling, and the
+ * ability to _open_ nodes.
+ */
 @theme(css)
 export default class TreePane extends ThemeableBase<TreePaneProperties> {
 	private _dragging = false;
 	private _dragPosition: number;
+	private _focusNode: HTMLElement;
 	private _items = new Map<string, TreePaneItem>();
+	private _navigation: TreePaneNavigationState;
 	private _resolver: IconResolver;
 	private _visibleRowCount: number;
 	private _scrollPosition = 0;
 	private _scrollVisible = false;
 	private _size: number;
 	private _sliderSize: number;
+	private _wantsFocus = false;
 
+	/**
+	 * _Flattens_ the tree of items into a map.
+	 */
 	private _cacheItems() {
 		function cacheItem(cache: Map<string, TreePaneItem>, item: TreePaneItem) {
 			cache.set(item.id, item);
@@ -114,18 +263,44 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		}
 	}
 
+	/**
+	 * Ensures that if the widget is blurred it will no longer grab focus
+	 */
+	private _onblur() {
+		this._wantsFocus = false;
+	}
+
+	/**
+	 * Hooks functions that grab references and information about the DOM that the widget needs to operate
+	 * properly.
+	 *
+	 * This will eventually be replaced by the Dojo `meta` services.
+	 * @param element The HTMLElement that is being updated
+	 * @param key The key of the item to be updated
+	 */
 	private _onDomUpdate(element: HTMLElement, key: string) {
 		if (key === 'rows') {
 			this._visibleRowCount = element.clientHeight / ROW_HEIGHT;
+			if (!this._focusNode) {
+				this._focusNode = element;
+			}
 		}
 	}
 
+	/**
+	 * Deal with starting to drag the scrollable area
+	 * @param evt The TouchEvent or MouseEvent
+	 */
 	private _onDragStart(evt: TouchEvent & MouseEvent) {
 		evt.preventDefault();
 		this._dragging = true;
 		this._dragPosition = getAbsolutePosition(evt);
 	}
 
+	/**
+	 * Deal with tracking the movement of the scrollable area
+	 * @param evt The TouchEvent or Mouse Event
+	 */
 	private _onDragMove(evt: TouchEvent & MouseEvent) {
 		const {
 			_dragging,
@@ -139,23 +314,100 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		}
 	}
 
+	/**
+	 * Deal with when the drag movement ends
+	 * @param evt The TouchEvent or MouseEvent
+	 */
 	private _onDragEnd(evt: TouchEvent & MouseEvent) {
 		evt.preventDefault();
 		this._dragging = false;
 	}
 
+	/**
+	 * Deal with keyboard navigation in the scroll area
+	 * @param evt The keyboard event
+	 */
+	private _onkeydown(evt: KeyboardEvent) {
+		const {
+			properties: {
+				expanded,
+				onItemOpen,
+				onItemSelect,
+				onItemToggle
+			},
+			_navigation: { next, previous, selected, start, end, selectedPosition }
+		} = this;
+		switch (evt.which) {
+		case Keys.Down: /* Select Next Row */
+			if (next && onItemSelect) {
+				evt.preventDefault();
+				onItemSelect(next);
+				const visibleEnd = end - start - 4;
+				if (selectedPosition > visibleEnd) { /* scroll down */
+					this._onPositionUpdate(Math.ceil(selectedPosition - visibleEnd));
+				}
+			}
+			break;
+		case Keys.Up: /* Select Previous Row */
+			if (previous && onItemSelect) {
+				evt.preventDefault();
+				onItemSelect(previous);
+				if (selectedPosition < 2) { /* scroll up */
+					this._onPositionUpdate(selectedPosition - 2);
+				}
+			}
+			break;
+		case Keys.Left: /* Close a folder */
+			if (selected && includes(expanded, selected) && onItemToggle) {
+				evt.preventDefault();
+				onItemToggle(selected);
+			}
+			break;
+		case Keys.Right: /* Open a folder */
+			if (selected) {
+				const item = this._items.get(selected);
+				if (item && item.children && !includes(expanded, selected) && onItemToggle) {
+					evt.preventDefault();
+					onItemToggle(selected);
+				}
+			}
+			break;
+		case Keys.Enter: /* Open a folder or open an item */
+			if (selected && onItemOpen) {
+				evt.preventDefault();
+				onItemOpen(selected);
+			}
+			break;
+		}
+	}
+
+	/**
+	 * Show the scrollbar
+	 * @param evt The mouse event
+	 */
 	private _onmouseenter(evt: MouseEvent) {
 		evt.preventDefault();
 		this._scrollVisible = true;
 		this.invalidate();
 	}
 
+	/**
+	 * Hide the scroll bar
+	 * @param evt The mouse event
+	 */
 	private _onmouseleave(evt: MouseEvent) {
 		evt.preventDefault();
 		this._scrollVisible = false;
 		this.invalidate();
 	}
 
+	/**
+	 * An internal higher order event that occurs when the top position of tree pane has changed, usually in response to a
+	 * scroll event.  The change is expressed in the number of rows moved, positive or negative.
+	 * @param delta The number of rows that have been scrolled
+	 * @returns `true` if the position was updated, otherwise `false`, which allows other methods to allow the tiggering
+	 *          event to bubble.
+	 */
 	private _onPositionUpdate(delta: number): boolean {
 		const { _scrollPosition, _size, _sliderSize } = this;
 		const updatedPosition = _scrollPosition + delta;
@@ -168,6 +420,11 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		return false;
 	}
 
+	/**
+	 * Handler for the row's higher order `onClick` event.  This fires the `onItemSelect` event.  If the item has children
+	 * then the `onItemToggle` is fired.  It also indicates to the widget that it should attempt to focus itself.
+	 * @param key The key of the item that has been clicked
+	 */
 	private _onRowClick(key: string) {
 		this.properties.selected !== key && this.properties.onItemSelect && this.properties.onItemSelect(key);
 		const item = this._items.get(key);
@@ -177,35 +434,69 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		if (item.children && this.properties.onItemToggle) {
 			this.properties.onItemToggle(key);
 		}
+		this._wantsFocus = true;
 	}
 
+	/**
+	 * Handler for the row's higher order `onDblClick` event.  This fires the `onItemOpen` event.
+	 * @param key The key of the item that has been double clicked
+	 */
 	private _onRowDblClick(key: string) {
 		this.properties.onItemOpen && this.properties.onItemOpen(key);
 	}
 
+	/**
+	 * Handler for the ScrollBar's higher order `onScroll` event.  This calls the `_onPosistionUpdate`.
+	 * @param delta The number of rows, positive or negative that have been scrolled
+	 */
 	private _onScrollbarScroll = (delta: number) => {
 		this._onPositionUpdate(delta);
 	}
 
+	/**
+	 * Handler for the `onwheel` when there is a wheel event in the scroll area that calls the
+	 * `_onPositionUpdate`.
+	 * @param evt The WheelEvent
+	 */
 	private _onwheel(evt: WheelEvent) {
 		if (this._onPositionUpdate(evt.deltaY / ROW_HEIGHT)) {
 			evt.preventDefault();
 		}
 	}
 
+	/**
+	 * Return a `WNode<Row>` that represents a `TreePaneItem`
+	 * @param item The TreePaneItem to be rendered
+	 * @param level How deep in the hierarchy is the child
+	 */
 	private _renderChild(item: TreePaneItem, level: number): WNode<Row> {
 		const { children, id: key, label, title } = item;
-		const { expanded: propsExpanded, theme } = this.properties;
+		const navigation = this._navigation;
+		const { expanded: propsExpanded, selected, theme } = this.properties;
 		const expanded = includes(propsExpanded, key);
 		const hasChildren = Boolean(children);
+		const resolverLabel = typeof label === 'string' ? label : '';
+		if (!navigation.selected) {
+			if (selected === key) {
+				navigation.selected = key;
+			}
+			else {
+				navigation.previous = key;
+				navigation.selectedPosition++;
+			}
+		}
+		else if (!navigation.next) {
+			navigation.next = key;
+		}
+
 		return w(Row, {
-			class: hasChildren ? this._resolver.folder(label, expanded) : this._resolver.file(label),
+			class: hasChildren ? this._resolver.folder(resolverLabel, expanded) : this._resolver.file(resolverLabel),
 			expanded,
 			hasChildren,
 			key,
 			level,
 			label,
-			selected: this.properties.selected === key,
+			selected: selected === key,
 			title,
 			theme,
 
@@ -214,9 +505,23 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		});
 	}
 
+	/**
+	 * Flatten the `root` of the tree and determine which rows need to be rendered, return an array
+	 * of `(WNode<Row> | null)[]`.
+	 */
 	private _renderChildren(): (WNode<Row> | null)[] {
+		this._navigation = {
+			next: '',
+			previous: '',
+			selected: '',
+			selectedPosition: 0,
+			start: 0,
+			end: 0
+		};
 		const {
+			_navigation,
 			_scrollPosition,
+			_visibleRowCount,
 			properties: {
 				expanded,
 				root,
@@ -224,8 +529,8 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 			}
 		} = this;
 		const children: (WNode<Row> | null)[] = [];
-		const start = _scrollPosition ? _scrollPosition - 1 : 0;
-		const end = start + this._visibleRowCount + 2;
+		const start = _navigation.start = _scrollPosition ? _scrollPosition - 1 : 0;
+		const end = _navigation.end = start + _visibleRowCount + 2;
 		let rowCount = 0;
 
 		const addChildren = (items: TreePaneItem[], level: number) => {
@@ -245,16 +550,27 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		return children;
 	}
 
+	/**
+	 * Handler that invokes `_onDomUpdate`
+	 * @param element The element being created
+	 * @param key The key of the element being created
+	 */
 	public onElementCreated(element: HTMLElement, key: string) {
 		this._onDomUpdate(element, key);
 	}
 
+	/**
+	 * Handler that invokes `_onDomUpdate`
+	 * @param element The element beign created
+	 * @param key The key of the element being created
+	 */
 	public onElementUpdated(element: HTMLElement, key: string) {
 		this._onDomUpdate(element, key);
 	}
 
 	public render() {
 		const {
+			_focusNode,
 			_onScrollbarScroll,
 			_resolver,
 			_scrollPosition,
@@ -266,8 +582,17 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 				sourcePath,
 				theme
 			},
-			_visibleRowCount
+			_visibleRowCount,
+			_wantsFocus
 		} = this;
+
+		/* if we have a cached focus, let's set the focus */
+		if (_focusNode && _wantsFocus) {
+			this._wantsFocus = false;
+			if (_focusNode !== document.activeElement) {
+				_focusNode.focus();
+			}
+		}
 		if (!_resolver && icons && sourcePath) {
 			this._resolver = new IconResolver(sourcePath, icons);
 		}
@@ -276,6 +601,7 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 		const rows = this._renderChildren();
 		const sliderSize = this._sliderSize = _visibleRowCount > rows.length ? rows.length : _visibleRowCount;
 		const size = this._size = rows.length;
+
 		return v('div', {
 			'aria-label': label,
 			classes: this.classes(css.root),
@@ -292,7 +618,10 @@ export default class TreePane extends ThemeableBase<TreePaneProperties> {
 				styles: {
 					top: String(top) + 'px'
 				},
+				tabIndex: 0,
 
+				onblur: this._onblur,
+				onkeydown: this._onkeydown,
 				onmousedown: this._onDragStart,
 				onmousemove: this._onDragMove,
 				onmouseup: this._onDragEnd,

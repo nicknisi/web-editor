@@ -3,7 +3,7 @@ import { createHandle } from '@dojo/core/lang';
 import { queueTask } from '@dojo/core/queue';
 import { debounce } from '@dojo/core/util';
 import { v, w } from '@dojo/widget-core/d';
-import { Constructor, VirtualDomProperties, WidgetProperties } from '@dojo/widget-core/interfaces';
+import { WidgetProperties } from '@dojo/widget-core/interfaces';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import { ThemeableMixin, ThemeableProperties, theme } from '@dojo/widget-core/mixins/Themeable';
 import DomWrapper from '@dojo/widget-core/util/DomWrapper';
@@ -13,20 +13,27 @@ import * as css from './styles/editor.m.css';
 const globalMonaco: typeof monaco = global.monaco;
 
 /**
- * @type EditorProperties
- *
  * Properties that can be set on an `Editor` widget
- *
- * @property filename The filename (from the current `project`) that the editor should be displaying for editing
- * @property options Editor options that should be passed to the monaco editor when it is created
- * @property onEditorInit Called when the monaco editor is created and initialized by the widget, passing the instance of the monaco editor
- * @property onEditorLayout Called when the widget calls `.layout()` on the monaco editor
  */
 export interface EditorProperties extends WidgetProperties, ThemeableProperties {
+	/**
+	 * The filename (from the current `project`) that the editor should be displaying for editing
+	 */
 	filename?: string;
+
+	/**
+	 * Editor options that should be passed to the monaco editor when it is created
+	 */
 	options?: monaco.editor.IEditorOptions;
 
+	/**
+	 * Called when the monaco editor is created and initialized by the widget, passing the instance of the monaco editor
+	 */
 	onEditorInit?(editor: monaco.editor.IStandaloneCodeEditor): void;
+
+	/**
+	 * Called when the widget calls `.layout()` on the monaco editor
+	 */
 	onEditorLayout?(): void;
 }
 
@@ -79,13 +86,25 @@ export class EditorService {
 
 const ThemeableBase = ThemeableMixin(WidgetBase);
 
+/**
+ * A Widget which will render a wrapped `monaco-editor`
+ */
 @theme(css)
 export default class Editor extends ThemeableBase<EditorProperties> {
 	private _editor: monaco.editor.IStandaloneCodeEditor | undefined;
 	private _editorService: EditorService;
-	private _EditorDom: Constructor<WidgetBase<VirtualDomProperties & WidgetProperties>>;
+	private _EditorDom: DomWrapper;
 	private _didChangeHandle: monaco.IDisposable;
-	private _onAfterRender = async () => {
+	private _doLayout = async () => {
+		this._queuedLayout = false;
+		if (!this._editor) {
+			return;
+		}
+		this._editor.layout();
+		const { onEditorLayout } = this.properties;
+		onEditorLayout && onEditorLayout();
+	}
+	private _onAttached = () => {
 		if (!this._editor) {
 			const {
 				_onDidChangeModelContent,
@@ -108,10 +127,6 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 				}
 			}));
 		}
-		this._editor.layout();
-		this._queuedLayout = false;
-		const { onEditorLayout } = this.properties;
-		onEditorLayout && onEditorLayout();
 	}
 	private _onDidChangeModelContent = () => {
 		if (this.properties.filename) {
@@ -131,22 +146,19 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 	constructor() {
 		super();
 		const root = this._root = document.createElement('div');
-		root.style.height = '100%';
-		root.style.width = '100%';
-		this._EditorDom = DomWrapper(root);
+		this._EditorDom = DomWrapper(root, { onAttached: this._onAttached });
 	}
 
 	public render() {
-		/* TODO: Refactor when https://github.com/dojo/widget-core/pull/548 published */
 		if (!this._queuedLayout) {
 			/* doing this async, during the next major task, to allow the widget to actually render */
 			this._queuedLayout = true;
-			queueTask(this._onAfterRender);
+			queueTask(this._doLayout);
 		}
 		this._setModel();
-		/* TODO: Create single node when https://github.com/dojo/widget-core/issues/553 resolved */
-		return v('div', {
-			classes: this.classes(css.root)
-		}, [ this.properties.filename ? w(this._EditorDom, { key: 'editor' }) : null ]);
+		return this.properties.filename ?
+			/* DomWrapper ignores `onAttached` here, but is needed to make testing possible */
+			w(this._EditorDom, { key: 'editor', classes: this.classes(css.root), onAttached: this._onAttached }) :
+			v('div', { classes: this.classes(css.root), key: 'editor' });
 	}
 }

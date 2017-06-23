@@ -1,7 +1,7 @@
 import { assign } from '@dojo/core/lang';
+import { Request } from '@dojo/routing/interfaces';
 import { find, includes } from '@dojo/shim/array';
 import { v, w } from '@dojo/widget-core/d';
-import { DNode } from '@dojo/widget-core/interfaces';
 import Projector from '@dojo/widget-core/mixins/Projector';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import Editor from '../Editor';
@@ -10,8 +10,10 @@ import IconCss from '../IconCss';
 import TreePane, { TreePaneItem } from '../TreePane';
 import * as css from '../styles/treepane.m.css';
 import project, { Program } from '../project';
+import { GistParameters, startGistRouter, setPath } from '../routing';
 import Runner, { RunnerProperties } from '../Runner';
 import { IconJson, load as loadIcons } from '../support/icons';
+import { getById, getByUsername } from '../support/gists';
 import { load as loadTheme } from '../support/themes';
 import darkTheme from '../themes/dark/theme';
 
@@ -69,6 +71,12 @@ function addFile(root: TreePaneItem | undefined, filename: string): TreePaneItem
 	return root;
 }
 
+interface GistReference {
+	description: string;
+	projectJson: string;
+	id?: string;
+}
+
 /**
  * An example application widget that incorporates both the Editor and Runner widgets into a simplistic UI
  */
@@ -77,10 +85,39 @@ class App extends WidgetBase {
 	private _compiling = false;
 	private _editorFilename = '';
 	private _expanded = [ '/', '/src' ];
+	private _gist: GistReference | undefined;
+	private _gists: GistReference[] = [];
+	private _githubUsername: string;
+	private _loadingGists = false;
 	private _program: Program | undefined;
+	private _projectName = 'Dojo 2 Todo MVC';
 	private _projectValue = 'dojo2-todo-mvc.project.json';
+	private _onRouteGist = async (request: Request<any, GistParameters>) => {
+		const isProjectLoaded = project.isLoaded();
+		if (isProjectLoaded) {
+			console.error('Project already loaded, cannot navigate to gist');
+		}
+		else {
+			this._gist = await getById(request.params.id);
+			if (this._gist) {
+				try {
+					await project.load(this._gist.projectJson);
+					console.log('Project loaded');
+					this.invalidate();
+				}
+				catch (err) {
+					console.error(err);
+				}
+			}
+			else {
+				console.error(`Could not find gist with ID "${request.params.id}" `);
+			}
+		}
+	}
+	private _onRouteRoot = (request: Request<any, any>) => { };
 	private _openFiles: string[] = [];
 	private _selected: string;
+	private _selectedGist: GistReference;
 
 	private _getTreeItems(): TreePaneItem {
 		const files = project.getFileNames();
@@ -107,6 +144,16 @@ class App extends WidgetBase {
 		});
 	}
 
+	private _onchangeGists(e: Event) {
+		const select: HTMLInputElement = e.target as any;
+		this._selectedGist = find(this._gists, ({ projectJson }) => projectJson === select.value);
+	}
+
+	private _onchangeGithubUsername(e: Event) {
+		const select: HTMLInputElement = e.target as any;
+		this._githubUsername = select.value;
+	}
+
 	/**
 	 * Handle when the project name changes in the dropdown
 	 * @param e The DOM `onchange` event
@@ -115,6 +162,7 @@ class App extends WidgetBase {
 		e.preventDefault();
 		const select: HTMLSelectElement = e.target as any;
 		this._projectValue = select.value;
+		this._projectName = select.options[select.selectedIndex].text || '?';
 	}
 
 	/**
@@ -124,13 +172,46 @@ class App extends WidgetBase {
 	private _onclickLoad(e: MouseEvent) {
 		e.preventDefault();
 		console.log(`Loading project "${this._projectValue}"...`);
-		project.load(PROJECT_DIRECTORY + this._projectValue)
-			.then(() => {
+		(async () => {
+			try {
+				await project.load(PROJECT_DIRECTORY + this._projectValue);
 				console.log('Project loaded');
 				this.invalidate();
-			}, (err) => {
+			}
+			catch (err) {
 				console.error(err);
-			});
+			}
+		})();
+	}
+
+	private _onclickLoadGist(e: MouseEvent) {
+		e.preventDefault();
+		setPath(this._selectedGist.id);
+	}
+
+	private _onclickLoadGists(e: MouseEvent) {
+		e.preventDefault();
+		if (!this._githubUsername) {
+			return;
+		}
+		console.log(`Loading gists for: "${this._githubUsername}"...`);
+		this._loadingGists = true;
+		this.invalidate();
+		(async () => {
+			try {
+				const gists = await getByUsername(this._githubUsername);
+				this._gists = [ ...(gists || []) ];
+				if (this._gists.length) {
+					this._selectedGist = this._gists[0];
+				}
+				console.log('Loaded.');
+				this._loadingGists = false;
+				this.invalidate();
+			}
+			catch (err) {
+				console.error(err);
+			}
+		})();
 	}
 
 	/**
@@ -195,6 +276,14 @@ class App extends WidgetBase {
 		this.invalidate();
 	}
 
+	constructor() {
+		super();
+		this.own(startGistRouter({
+			onGist: this._onRouteGist,
+			onRoot: this._onRouteRoot
+		}));
+	}
+
 	/**
 	 * Handles when the Runner widget finishes running the project
 	 */
@@ -206,25 +295,36 @@ class App extends WidgetBase {
 	render() {
 		const isProjectLoaded = project.isLoaded();
 
+		const programName = isProjectLoaded ? v('h3', { }, [ this._projectName || '' ]) : null;
+
+		const gistLoad = !isProjectLoaded ? v('div', { key: 'gistLoad' }, [
+			v('label', { for: 'username' }, [ 'GitHub username: ' ]),
+			v('input', { name: 'username', type: 'text', placeholder: 'GitHub username', onchange: this._onchangeGithubUsername }),
+			v('button', { type: 'button', name: 'load-gists', id: 'load-gists', onclick: this._onclickLoadGists, disabled: this._loadingGists ? true : false }, [ 'Get Gists' ])
+		]) : null;
+
+		const gists = this._gists.length && !isProjectLoaded ? v('div', {}, [
+			v('label', { for: 'gists' }, [ 'Gist to load: ' ]),
+			v('select', { type: 'text', name: 'gists', id: 'gists', onchange: this._onchangeGists }, this._gists.map(({ description, projectJson }) => v('option', { value: projectJson }, [ description ]))),
+			v('button', { type: 'button', name: 'load-gist', id: 'load-gist', onclick: this._onclickLoadGist }, [ 'Load' ])
+		]) : null;
+
 		/* A UI to select a project and provide a button to load it */
-		const projectLoad = v('div', { key: 'projectLoad' }, [
-			v('label', { for: 'project' }, [ 'Project to load:' ]),
-			v('select', { type: 'text', name: 'project', id: 'project', onchange: this._onchangeProject, disabled: isProjectLoaded ? true : false }, [
+		const projectLoad = !isProjectLoaded ? v('div', { key: 'projectLoad' }, [
+			v('label', { for: 'project' }, [ 'Project to load: ' ]),
+			v('select', { type: 'text', name: 'project', id: 'project', onchange: this._onchangeProject }, [
 				v('option', { value: 'dojo-test-app.project.json' }, [ 'Dojo 2 Hello World' ]),
 				v('option', { value: 'dojo2-todo-mvc.project.json', selected: true }, [ 'Dojo 2 Todo MVC' ]),
 				v('option', { value: 'dojo2-todo-mvc-tsx.project.json' }, [ 'Dojo 2 Todo MVC TSX' ]),
 				v('option', { value: 'dojo2-todo-mvc-kitchensink.project.json' }, [ 'Dojo 2 Kitchensink Todo MVC' ])
 			]),
-			v('button', { type: 'button', name: 'load-project', id: 'load-project', onclick: this._onclickLoad, disabled: isProjectLoaded ? true : false }, [ 'Load' ])
-		]);
+			v('button', { type: 'button', name: 'load-project', id: 'load-project', onclick: this._onclickLoad }, [ 'Load' ])
+		]) : null;
 
-		let projectRun: DNode = null;
-		/* If the project is loaded, then we will render a UI which allows selection of the file to edit and a button to run the project */
-		if (isProjectLoaded) {
-			projectRun = v('div', { key: 'projectRun' }, [
-				v('button', { type: 'button', name: 'run', id: 'run', onclick: this._onclickRun, disabled: this._compiling ? true : false }, [ 'Run' ])
-			]);
-		}
+		/* A UI to run the loaded project */
+		const projectRun = isProjectLoaded ? v('div', { key: 'projectRun' }, [
+			v('button', { type: 'button', name: 'run', id: 'run', onclick: this._onclickRun, disabled: this._compiling ? true : false }, [ 'Run' ])
+		]) : null;
 
 		const runnerProperties: RunnerProperties = assign({}, this._program, { key: 'runner', onRun: this._onRun, theme: darkTheme });
 
@@ -233,53 +333,63 @@ class App extends WidgetBase {
 				'app': true
 			}
 		}, [
-			w(IconCss, {
-				baseClass: css.labelFixed,
-				icons,
-				key: 'iconcss',
-				sourcePath
-			}),
-			projectLoad,
-			projectRun,
+			v('h1', { }, [ '@dojo/web-editor']),
+			programName,
 			v('div', {
 				classes: {
-					wrap: true
-				},
-				key: 'wrap'
+					'app': true
+				}
 			}, [
-				v('div', {
-					styles: { flex: '1' }
-				}, [ w(TreePane, {
-					expanded: [ ...this._expanded ],
+				w(IconCss, {
+					baseClass: css.labelFixed,
 					icons,
-					key: 'treepane',
-					selected: this._selected,
-					sourcePath,
-					root: isProjectLoaded ? this._getTreeItems() : undefined,
-					onItemOpen: this._onItemOpen,
-					onItemSelect: this._onItemSelect,
-					onItemToggle: this._onItemToggle,
-					theme: darkTheme
-				}) ]),
+					key: 'iconcss',
+					sourcePath
+				}),
+				gistLoad,
+				gists,
+				projectLoad,
+				projectRun,
 				v('div', {
-					styles: { flex: '1', margin: '0 0.5em' }
+					classes: {
+						wrap: true
+					},
+					key: 'wrap'
 				}, [
-					this._openFiles.length ? w(FileBar, {
-						activeIndex: this._getActiveFile(),
-						files: this._getFileItems(),
-						key: 'filebar',
-						theme: darkTheme,
-						onRequestTabClose: this._onRequestTabClose,
-						onRequestTabChange: this._onRequestTabChange
-					}) : null,
-					w(Editor, {
-						filename: this._editorFilename,
-						key: 'editor',
-						options: { theme: monacoTheme },
+					v('div', {
+						styles: { flex: '1' }
+					}, [ w(TreePane, {
+						expanded: [ ...this._expanded ],
+						icons,
+						key: 'treepane',
+						selected: this._selected,
+						sourcePath,
+						root: isProjectLoaded ? this._getTreeItems() : undefined,
+						onItemOpen: this._onItemOpen,
+						onItemSelect: this._onItemSelect,
+						onItemToggle: this._onItemToggle,
 						theme: darkTheme
-					})
-				]),
-				w(Runner, runnerProperties)
+					}) ]),
+					v('div', {
+						styles: { flex: '1', margin: '0 0.5em' }
+					}, [
+						this._openFiles.length ? w(FileBar, {
+							activeIndex: this._getActiveFile(),
+							files: this._getFileItems(),
+							key: 'filebar',
+							theme: darkTheme,
+							onRequestTabClose: this._onRequestTabClose,
+							onRequestTabChange: this._onRequestTabChange
+						}) : null,
+						w(Editor, {
+							filename: this._editorFilename,
+							key: 'editor',
+							options: { theme: monacoTheme },
+							theme: darkTheme
+						})
+					]),
+					w(Runner, runnerProperties)
+				])
 			])
 		]);
 	}

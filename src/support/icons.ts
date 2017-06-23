@@ -3,6 +3,9 @@ import request from '@dojo/core/request';
 
 const globalURL: typeof URL = global.window.URL;
 
+/**
+ * An object that corresponds to the JSON structure of the icon theme file
+ */
 export interface IconJson {
 	iconDefinitions: {
 		[name: string]: {

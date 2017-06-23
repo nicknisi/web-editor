@@ -1,17 +1,48 @@
 import { v } from '@dojo/widget-core/d';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import { theme, ThemeableMixin, ThemeableProperties } from '@dojo/widget-core/mixins/Themeable';
-import * as css from './styles/scrollbar.m.css';
-import { getAbsolutePosition } from './support/events';
+import * as css from '../styles/scrollbar.m.css';
+import { getAbsolutePosition } from '../support/events';
 
+/**
+ * Properties that can be set `ScrollBar`
+ */
 export interface ScrollBarProperties extends ThemeableProperties {
+	/**
+	 * Is the scroll bar horizontal?  Defaults to `false`.
+	 */
 	horizontal?: boolean;
+
+	/**
+	 * The relative position of the top of slider to the scroll area
+	 */
 	position: number;
+
+	/**
+	 * The relative size of the scroll area
+	 */
 	size?: number;
+
+	/**
+	 * The minimum number of pixels of the slider
+	 */
 	sliderMin?: number;
+
+	/**
+	 * The relative size of the slider
+	 */
 	sliderSize?: number;
+
+	/**
+	 * Is the slider visible?
+	 */
 	visible?: boolean;
 
+	/**
+	 * Called when the widget wants to scroll
+	 * @param delta The relative size of the requested scroll, negative values are a scroll up and positive values are
+	 *              a scroll down.
+	 */
 	onScroll?(delta: number): void;
 }
 
@@ -19,6 +50,11 @@ const DEFAULT_KEY = 'scrollbar';
 
 const ThemeableBase = ThemeableMixin(WidgetBase);
 
+/**
+ * A class that provides a visualization of scrolling as well as emits events when the user interacts with
+ * the scroll bar.  The properties of the scroll widget are relative, thereby not needing to translate from
+ * the real DOM size of the scroll bar or scroll area it represents.
+ */
 @theme(css)
 export default class ScrollBar extends ThemeableBase<ScrollBarProperties> {
 	private _domSize = 0;
