@@ -116,7 +116,7 @@ class App extends WidgetBase {
 	private _onRouteRoot = (request: Request<any, any>) => { };
 	private _openFiles: string[] = [];
 	private _selected: string;
-	private _selectedGist: GistReference;
+	private _selectedGist: GistReference | undefined;
 
 	private _getTreeItems(): TreePaneItem {
 		const files = project.getFileNames();
@@ -185,7 +185,9 @@ class App extends WidgetBase {
 
 	private _onclickLoadGist(e: MouseEvent) {
 		e.preventDefault();
-		setPath(this._selectedGist.id);
+		if (this._selectedGist) {
+			setPath(this._selectedGist.id);
+		}
 	}
 
 	private _onclickLoadGists(e: MouseEvent) {
