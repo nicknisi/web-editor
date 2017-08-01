@@ -1,7 +1,15 @@
 {
 	"name": "dojo2",
 	"type": "dark",
-	"colors": {},
+	"colors": {
+		"dropdown.background": "#292d35",
+		"editor.background": "#16181C",
+		"list.hoverBackground": "#292d35",
+		"peekViewTitle.background": "#292d35",
+		"peekViewEditor.background": "#292d35",
+		"peekViewResult.background": "#16181C",
+		"scrollbarSlider.background": "#16181C"
+	},
 	"rules": [
 		{
 			"token": "",

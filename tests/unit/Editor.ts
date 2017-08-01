@@ -45,7 +45,7 @@ function getMonacoEditor(properties: Partial<EditorProperties> = {}): Promise<mo
 		widget.callListener('onAttached', {
 			key: 'editor'
 		});
-	});
+	}) as any;
 }
 
 registerSuite({
@@ -144,11 +144,9 @@ registerSuite({
 	async 'editor passes options'() {
 		await getMonacoEditor({
 			filename: './src/main.ts',
-			options: {
-				theme: 'vs-code-pretty'
-			}
-		} as any); // theme is now missing from editor?!
-		assert.deepEqual(monacoEditorCreateOptions, { theme: 'vs-code-pretty' }, 'should pass options properly');
+			options: { }
+		});
+		assert.deepEqual(monacoEditorCreateOptions, { }, 'should pass options properly');
 	},
 
 	async 'sets the proper file'() {

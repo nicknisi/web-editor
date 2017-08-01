@@ -8,6 +8,7 @@ import { find, includes } from '@dojo/shim/array';
 import WeakMap from '@dojo/shim/WeakMap';
 import { DiagnosticMessageChain, OutputFile } from 'typescript';
 import { getDefinitions, getEmit as getCssEmit } from './support/css';
+import DefinitionProvider from './support/DefinitionProvider';
 import { getEmit as getJsonEmit } from './support/json';
 import xhr from './support/providers/xhr';
 
@@ -97,14 +98,6 @@ function flattenDiagnosticMessageText(messageText: string | DiagnosticMessageCha
 }
 
 /**
- * Create a monaco-editor model for the specified project file
- * @param param0 The project file to create the model from
- */
-function createMonacoModel({ name: filename, text, type }: ProjectFile): monaco.editor.IModel {
-	return monaco.editor.createModel(text, getLanguageFromType(type), monaco.Uri.file(filename));
-}
-
-/**
  * Convert a `ProjectFileType` to a monaco-editor language
  * @param type The type to get a monaco-editor language for
  */
@@ -176,6 +169,11 @@ function getScriptTarget(type: string): ScriptTarget {
 
 export class Project extends Evented {
 	/**
+	 * A definition provider that allows for linking to other files
+	 */
+	private _definitionProvider: DefinitionProvider;
+
+	/**
 	 * The loaded project bundle structure
 	 */
 	private _project: ProjectJson | undefined;
@@ -188,7 +186,7 @@ export class Project extends Evented {
 	/**
 	 * The worker to use for managing TypeScript services
 	 */
-	private _worker: TypeScriptWorker;
+	private _worker: TypeScriptWorker | undefined;
 
 	/**
 	 * Check if there are any emit errors for a given file
@@ -212,6 +210,20 @@ export class Project extends Evented {
 				console.warn(`Error: ${message}`);
 			}
 		});
+	}
+
+	/**
+	 * Create a monaco-editor model for the specified project file
+	 * @param param0 The project file to create the model from
+	 */
+	private _createMonacoModel({ name: filename, text, type }: ProjectFile): monaco.editor.IModel {
+		const language = getLanguageFromType(type);
+		const model = monaco.editor.createModel(text, language, monaco.Uri.file(filename));
+		if (language === 'typescript') {
+			// cannot set the worker until there is at least one typescript model created
+			this._setWorker();
+		}
+		return model;
 	}
 
 	/**
@@ -298,6 +310,14 @@ export class Project extends Evented {
 		monaco.languages.typescript.typescriptDefaults.setCompilerOptions(options);
 	}
 
+	private async _setWorker(): Promise<void> {
+		this._worker = await monaco.languages.typescript.getTypeScriptWorker();
+		if (this._worker) {
+			const definitionProvider = this._definitionProvider = new DefinitionProvider(this._worker!, this.includes.bind(this));
+			monaco.languages.registerDefinitionProvider('typescript', definitionProvider);
+		}
+	}
+
 	/**
 	 * Flush any changes that have come from the editor back into the project files.
 	 */
@@ -350,7 +370,7 @@ export class Project extends Evented {
 			.filter(({ type }) => type === ProjectFileType.Definition || type === ProjectFileType.TypeScript)
 			.map(({ name }) => this.getFileModel(name).uri);
 		if (!this._worker) {
-			this._worker = await monaco.languages.typescript.getTypeScriptWorker();
+			throw new TypeError('Project does not contain any TypeScript files.');
 		}
 		const worker = this._worker;
 		const services = await worker(...typescriptFileUris);
@@ -447,7 +467,7 @@ export class Project extends Evented {
 		}
 		const fileData = this._getProjectFileData(file);
 		if (!fileData.model) {
-			fileData.model = createMonacoModel(file);
+			fileData.model = this._createMonacoModel(file);
 		}
 		return fileData.model;
 	}
