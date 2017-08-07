@@ -4,6 +4,8 @@
   "description": "Making it easy to explore Dojo 2 in a browser",
   "main": "main.js",
   "scripts": {
+    "build": "dojo build webpack",
+    "dev": "dojo build webpack -w",
     "test": "grunt test"
   },
   "repository": {
@@ -17,6 +19,8 @@
   },
   "homepage": "https://github.com/dojo/web-editor#readme",
   "devDependencies": {
+    "@dojo/cli": "next",
+    "@dojo/cli-build-webpack": "next",
     "@dojo/cli-export-project": ">=2.0.0-alpha.2",
     "@dojo/i18n": "next",
     "@dojo/interfaces": "next",
