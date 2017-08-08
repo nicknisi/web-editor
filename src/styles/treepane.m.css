@@ -19,7 +19,9 @@
 	text-overflow: hidden;
 }
 
-.labelFixed { }
+.labelFixed {
+	flex: 1;
+}
 
 .labelName {
 	overflow: hidden;

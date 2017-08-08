@@ -18,7 +18,7 @@ import { load as loadTheme } from './support/themes';
 import darkTheme from './themes/dark/theme';
 
 /* path to the project directory */
-const PROJECT_DIRECTORY = '../../projects/';
+const PROJECT_DIRECTORY = '../projects/';
 let icons: IconJson;
 const sourcePath = '../extensions/vscode-material-icon-theme/out/src/material-icons.json';
 
@@ -402,7 +402,7 @@ class App extends WidgetBase {
 const projector = new (Projector(App))();
 
 (async () => {
-	await loadTheme('../themes/editor-dark.json');
+	await loadTheme('./themes/editor-dark.json');
 	icons = await loadIcons(sourcePath);
 	/* Start the projector and append it to the document.body */
 	projector.append();

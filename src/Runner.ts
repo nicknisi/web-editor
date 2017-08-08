@@ -48,13 +48,13 @@ const TSLIB_SEMVER = '^1.6.0';
  * The default URI for the AMD loader to use when running a program
  */
 const DEFAULT_LOADER_URI = 'https://unpkg.com/@dojo/loader/loader.min.js';
-const DEFAULT_IFRAME_SRC = '../support/blank.html';
+const DEFAULT_IFRAME_SRC = './support/blank.html';
 
 /**
  * A map of custom package data that needs to be added if this package is part of project that is being run
  */
 const PACKAGE_DATA: { [pkg: string]: string } = {
-	cldrjs: `{ name: 'cldr', location: 'https://unpkg.com/cldrjs@<%SEMVER>/dist/cldr', main: '../cldr' }`,
+	cldrjs: `{ name: 'cldr', location: 'https://unpkg.com/cldrjs@<%SEMVER>/dist/cldr', main: './cldr' }`,
 	globalize: `{ name: 'globalize', main: '/dist/globalize' }`,
 	maquette: `{ name: 'maquette', main: '/dist/maquette.min' }`,
 	pepjs: `{ name: 'pepjs', main: 'dist/pep' }`,
@@ -182,9 +182,9 @@ var cache = {};
 /* workaround for dojo/loader#124 */
 require.cache({});
 
-require([ 'tslib', '@dojo/core/request', '../support/providers/amdRequire' ], function () {
+require([ 'tslib', '@dojo/core/request', './support/providers/amdRequire' ], function () {
 	var request = require('@dojo/core/request').default;
-	var getProvider = require('../support/providers/amdRequire').default;
+	var getProvider = require('./support/providers/amdRequire').default;
 	request.setDefaultProvider(getProvider(require));
 	require([ 'src/main' ], function () { });
 });

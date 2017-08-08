@@ -201,7 +201,7 @@ export class Row extends ThemeableBase<RowProperties> {
 				classes: this.classes(css.content)
 			}, [
 				v('div', {
-					classes: this.classes(css.label).fixed(rowClass || null),
+					classes: this.classes(css.label).fixed(css.labelFixed, rowClass || null),
 					title: title
 				}, [
 					v('a', {
