@@ -1,4 +1,4 @@
-import 'vs/editor/editor.main'; /* imported for side-effects */
+// import 'vs/editor/editor.main'; /* imported for side-effects */
 
 import { ProjectJson, ProjectFile, ProjectFileType } from '@dojo/cli-export-project/interfaces/project.json';
 import Evented from '@dojo/core/Evented';
@@ -128,9 +128,9 @@ function getLanguageFromType(type: ProjectFileType): string {
 }
 
 type JsxEmit = monaco.languages.typescript.JsxEmit;
-const JsxEmit = monaco.languages.typescript.JsxEmit;
 
 function getJsxEmit(type: string | undefined): JsxEmit {
+	const JsxEmit = monaco.languages.typescript.JsxEmit;
 	switch (type) {
 	case 'preserve':
 		return JsxEmit.Preserve;
@@ -142,9 +142,9 @@ function getJsxEmit(type: string | undefined): JsxEmit {
 }
 
 type ScriptTarget = monaco.languages.typescript.ScriptTarget;
-const ScriptTarget = monaco.languages.typescript.ScriptTarget;
 
 function getScriptTarget(type: string): ScriptTarget {
+	const ScriptTarget = monaco.languages.typescript.ScriptTarget;
 	switch (type) {
 	case 'es3':
 		return ScriptTarget.ES3;

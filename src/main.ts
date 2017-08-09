@@ -1,3 +1,4 @@
+import loadMonaco from './support/monaco';
 import { assign } from '@dojo/core/lang';
 import { Request } from '@dojo/routing/interfaces';
 import { find, includes } from '@dojo/shim/array';
@@ -399,11 +400,12 @@ class App extends WidgetBase {
 }
 
 /* Mixin a projector to the App and create an instance */
-const projector = new (Projector(App))();
 
 (async () => {
+	await loadMonaco();
 	await loadTheme('./themes/editor-dark.json');
 	icons = await loadIcons(sourcePath);
+	const projector = new (Projector(App))();
 	/* Start the projector and append it to the document.body */
 	projector.append();
 })();

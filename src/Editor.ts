@@ -11,8 +11,6 @@ import project from './project';
 import EditorService from './support/EditorService';
 import * as css from './styles/editor.m.css';
 
-const globalMonaco: typeof monaco = global.monaco;
-
 /**
  * Properties that can be set on an `Editor` widget
  */
@@ -69,7 +67,7 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 				}
 			} = this;
 			const editorService = this._editorService = new EditorService();
-			const editor = this._editor = globalMonaco.editor.create(_root, options, { editorService });
+			const editor = this._editor = global.monaco.editor.create(_root, options, { editorService });
 			editorService.editor = editor;
 			const didChangeHandle = this._didChangeHandle = editor.onDidChangeModelContent(debounce(_onDidChangeModelContent, 1000));
 			this._setModel();
