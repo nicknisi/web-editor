@@ -59,6 +59,7 @@ module.exports = (env: string, args: string[]) => {
 			'support/worker-proxy': './src/support/worker-proxy.ts'
 		},
 		output: {
+			libraryTarget: 'umd',
 			filename: '[name].js',
 			path: resolve(__dirname, 'dist')
 		},
