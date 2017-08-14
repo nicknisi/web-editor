@@ -36,6 +36,7 @@ export const addExtraLibSpy = sandbox.spy((text: string, filename: string) => {
 	};
 });
 export const setCompilerOptionsSpy = sandbox.spy();
+export const registerDefinitionProviderSpy = sandbox.spy();
 export const languageServiceStub = {
 	getEmitOutput(filename: string) {
 		return Promise.resolve({
@@ -123,7 +124,8 @@ export default {
 				addExtraLib: addExtraLibSpy,
 				setCompilerOptions: setCompilerOptionsSpy
 			}
-		}
+		},
+		registerDefinitionProvider: registerDefinitionProviderSpy
 	},
 	Uri: {
 		file: uriFileSpy

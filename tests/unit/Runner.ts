@@ -90,7 +90,7 @@ registerSuite({
 		assert.lengthOf(render.children, 1, 'should have only one child');
 		assert.isFunction((render.children[0] as WNode).widgetConstructor, 'should be a function');
 		assert.strictEqual((render.children[0] as WNode).properties.key, 'runner', 'should have runner key set');
-		assert.strictEqual(((render.children[0] as WNode).properties as any).src, '../support/blank.html', 'should have src set to default');
+		assert.strictEqual(((render.children[0] as WNode).properties as any).src, './support/blank.html', 'should have src set to default');
 	},
 
 	'support setting src'() {
@@ -232,7 +232,7 @@ registerSuite({
 		const scripts = doc.querySelectorAll('script');
 		const main = scripts[1];
 		assert(main, 'should have a main script');
-		assert.include(main.text, `{ name: 'cldr', location: 'https://unpkg.com/cldrjs@1.0.0/dist/cldr', main: '../cldr' }`);
+		assert.include(main.text, `{ name: 'cldr', location: 'https://unpkg.com/cldrjs@1.0.0/dist/cldr', main: './cldr' }`);
 		assert.include(main.text, `{ name: 'globalize', main: '/dist/globalize' }`);
 		assert.include(main.text, `{ name: 'maquette', main: '/dist/maquette.min' }`);
 		assert.include(main.text, `{ name: 'pepjs', main: 'dist/pep' }`);

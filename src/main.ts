@@ -1,4 +1,5 @@
 import loadMonaco from './support/monaco';
+import * as routing from './routing';
 import { assign } from '@dojo/core/lang';
 import { Request } from '@dojo/routing/interfaces';
 import { find, includes } from '@dojo/shim/array';
@@ -398,6 +399,16 @@ class App extends WidgetBase {
 		]);
 	}
 }
+
+export {
+	Editor,
+	FileBar,
+	IconCss,
+	project,
+	routing,
+	Runner,
+	TreePane
+};
 
 /* Mixin a projector to the App and create an instance */
 

@@ -369,6 +369,10 @@ export class Project extends Evented {
 		const typescriptFileUris = this._project.files
 			.filter(({ type }) => type === ProjectFileType.Definition || type === ProjectFileType.TypeScript)
 			.map(({ name }) => this.getFileModel(name).uri);
+
+		// FIXME: is this necessary all the time?
+		await this._setWorker();
+
 		if (!this._worker) {
 			throw new TypeError('Project does not contain any TypeScript files.');
 		}
