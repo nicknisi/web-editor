@@ -50,7 +50,7 @@ const cssModuleLoader = ExtractTextPlugin.extract({
 module.exports = (env: string, args: string[]) => {
 	return {
 		entry: {
-			'src/main': [
+			'main': [
 				join(basePath, 'src/main.css'),
 				join(basePath, 'src/main.ts')
 			],
@@ -149,7 +149,7 @@ module.exports = (env: string, args: string[]) => {
 			]
 		},
 		plugins: [
-			new AutoRequireWebpackPlugin(/src\/main/),
+			new AutoRequireWebpackPlugin(/main/),
 			new NormalModuleReplacementPlugin(/\.m\.css$/, (result: any) => {
 				if (isAbsolute(result.request)) {
 					return;
@@ -164,7 +164,7 @@ module.exports = (env: string, args: string[]) => {
 			}),
 			new HtmlWebpackPlugin({
 				inject: true,
-				chunks: [ 'src/main', 'postcss' ],
+				chunks: [ 'main', 'postcss' ],
 				template: 'src/index.html'
 			}),
 			new IgnorePlugin(/request\/providers\/node/),

@@ -10,6 +10,7 @@ import DomWrapper from '@dojo/widget-core/util/DomWrapper';
 import project from './project';
 import EditorService from './support/EditorService';
 import * as css from './styles/editor.m.css';
+import loadMonaco from './support/monaco';
 
 /**
  * Properties that can be set on an `Editor` widget
@@ -47,6 +48,7 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 	private _editorService: EditorService;
 	private _EditorDom: DomWrapper;
 	private _didChangeHandle: monaco.IDisposable;
+	private _monacoLoaded = false;
 	private _doLayout = async () => {
 		this._queuedLayout = false;
 		if (!this._editor) {
@@ -101,6 +103,7 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 		super();
 		const root = this._root = document.createElement('div');
 		this._EditorDom = DomWrapper(root, { onAttached: this._onAttached });
+		loadMonaco().then(() => this._monacoLoaded = true);
 	}
 
 	public render() {
@@ -110,7 +113,7 @@ export default class Editor extends ThemeableBase<EditorProperties> {
 			queueTask(this._doLayout);
 		}
 		this._setModel();
-		return this.properties.filename ?
+		return this._monacoLoaded && this.properties.filename ?
 			/* DomWrapper ignores `onAttached` here, but is needed to make testing possible */
 			w(this._EditorDom, { key: 'editor', classes: this.classes(css.root), onAttached: this._onAttached }) :
 			v('div', { classes: this.classes(css.root), key: 'editor' });

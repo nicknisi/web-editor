@@ -1,50 +1,136 @@
 import global from '@dojo/shim/global';
+import request from '@dojo/core/request';
+import Projector from '@dojo/widget-core/mixins/Projector';
+import { v } from '@dojo/widget-core/d';
+import WidgetBase from '@dojo/widget-core/WidgetBase';
+import { WidgetProperties } from '@dojo/widget-core/interfaces';
 
-function injectScript(url: string): Promise<void> {
-	let onLoad: () => void;
-	let onError: () => void;
-	let script: HTMLScriptElement;
-
-	const cleanup = () => {
-		script.removeEventListener('load', onLoad);
-		script.removeEventListener('error', onError);
-	};
-
-	const promise = new Promise<void>((resolve, reject) => {
-		onLoad = () => resolve();
-		onError = () => reject();
-		script = document.createElement('script');
-		script.type = 'text/javascript';
-		script.src = url;
-		script.addEventListener('load', onLoad);
-		script.addEventListener('error', onError);
-		document.head.appendChild(script);
-	});
-
-	promise.then(cleanup, cleanup);
-
-	return promise;
+export interface ThemeJson {
+	name: string;
+	type: string;
+	colors: { [color: string]: string };
+	rules: monaco.editor.ITokenThemeRule[];
 }
 
-let monacoPromise: Promise<void>;
+async function loadThemeFile(filename: string): Promise<ThemeJson> {
+	return (await request(filename)).json<ThemeJson>();
+}
 
-export function loadMonaco(): Promise<void> {
-	if (monacoPromise) {
-		return monacoPromise;
+function getEditorTheme(theme: ThemeJson): monaco.editor.IStandaloneThemeData {
+	const base = theme.type === 'dark' ? 'vs-dark' : theme.type === 'hc' ? 'hc-black' : 'vs';
+	const { colors, rules } = theme;
+	return {
+		base,
+		inherit: true,
+		rules,
+		colors
+	};
+}
+
+export class MonacoScript extends WidgetBase<WidgetProperties> {
+	promise: Promise<typeof monaco>;
+	private _onload: () => void;
+	private _onerror: () => void;
+	private readonly _proxyUrl = 'support/worker-proxy.js';
+	private readonly _editorModuleId = 'vs/editor/editor.main';
+	private readonly _loaderSrc = 'vs/loader.js';
+
+	private _loadEditor: () => Promise<typeof monaco> = () => {
+		return new Promise<typeof monaco>((resolve, reject) => {
+			global.MonacoEnvironment = {
+				getWorkerUrl: () => this._proxyUrl
+			};
+			if (!global.require) {
+				reject(new Error('AMD require not found.'));
+			}
+			global.require([this._editorModuleId], () => resolve(global.monaco));
+		});
 	}
 
-	monacoPromise = new Promise<void>(async (resolve, reject) => {
-		try {
-			await injectScript('vs/loader.js');
-			global.require(['vs/editor/editor.main'], async () => {
-				resolve();
-			});
-		} catch (e) {
-			reject();
-		}
-	});
+	constructor() {
+		super();
+		this.promise = (new Promise<void>((resolve, reject) => {
+			this._onload = () => resolve();
+			this._onerror = () => reject();
+		}))
+		.then(this._loadEditor);
+	}
 
-	return monacoPromise;
+	render() {
+		return v('script', {
+			src: this._loaderSrc,
+			onload: this._onload,
+			onerror: this._onerror
+		});
+	}
+}
+
+let projector: Projector<WidgetProperties> & MonacoScript;
+export function loadMonaco(): Promise<typeof monaco> {
+	if (!projector) {
+		projector = new (Projector(MonacoScript))();
+		projector.append();
+	}
+
+	return projector.promise;
+}
+
+export async function loadTheme(filename: string): Promise<void> {
+	const theme = await loadThemeFile(filename);
+	const monacoNamespace = await loadMonaco();
+	monacoNamespace.editor.defineTheme(theme.name, getEditorTheme(theme));
+	monacoNamespace.editor.setTheme(theme.name);
 }
 
 export default loadMonaco;
+
+// export interface MonacoScriptProperties extends WidgetProperties {
+// 	onLoad?(): void;
+// 	onError?(error: string | Error): void;
+// }
+
+// export class XMonacoScript extends WidgetBase<MonacoScriptProperties> {
+// 	private _monacoPromise: Promise<void>;
+// 	private readonly _loaderSrc = 'vs/loader.js';
+// 	private readonly _editorModuleId = 'vs/editor/editor.main';
+// 	private readonly _proxyUrl = 'worker-proxy.js';
+
+// 	private _onload: () => void;
+// 	private _onerror: () => void;
+
+// 	private _loadEditor(): Promise<void> {
+// 		return new Promise<void>((resolve, reject) => {
+// 			global.MonacoEnvironment = {
+// 				getWorkerUrl: () => this._proxyUrl
+// 			};
+// 			if (!global.require) {
+// 				reject(new Error('AMD loader not found.'));
+// 			}
+// 			global.require([this._editorModuleId], () => resolve());
+// 		});
+// 	}
+
+// 	constructor() {
+// 		super();
+// 		const { onLoad, onError } = this.properties;
+// 		this._monacoPromise = (new Promise<void>((resolve, reject) => {
+// 			this._onload = () => resolve();
+// 			this._onerror = () => reject();
+// 		}))
+// 		.then(this._loadEditor)
+// 		.then(() => onLoad && onLoad())
+// 		.catch(error => onError && onError(error));
+// 	}
+
+// 	whenLoaded(): Promise<void> {
+// 		return this._monacoPromise;
+// 	}
+
+// 	render() {
+// 		return v('script', {
+// 			src: this._loaderSrc,
+// 			onload,
+// 			onerror
+// 		});
+// 	}
+// }

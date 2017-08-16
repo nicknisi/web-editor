@@ -8,7 +8,7 @@ interface Window {
 }
 declare const importScripts: (mid: string) => void;
 
-// self.MonacoEnvironment = {
-// 	baseUrl: '../../../node_modules/monaco-editor/min/'
-// };
-importScripts('vs/base/worker/workerMain.js');
+self.MonacoEnvironment = {
+	baseUrl: '..'
+};
+importScripts('../vs/base/worker/workerMain.js');

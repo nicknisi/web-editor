@@ -1,4 +1,3 @@
-import loadMonaco from './support/monaco';
 import * as routing from './routing';
 import { assign } from '@dojo/core/lang';
 import { Request } from '@dojo/routing/interfaces';
@@ -16,7 +15,7 @@ import { GistParameters, startGistRouter, setPath } from './routing';
 import Runner, { RunnerProperties } from './Runner';
 import { IconJson, load as loadIcons } from './support/icons';
 import { getById, getByUsername } from './support/gists';
-import { load as loadTheme } from './support/themes';
+import { loadTheme } from './support/monaco';
 import darkTheme from './themes/dark/theme';
 
 /* path to the project directory */
@@ -413,7 +412,6 @@ export {
 /* Mixin a projector to the App and create an instance */
 
 (async () => {
-	await loadMonaco();
 	await loadTheme('./themes/editor-dark.json');
 	icons = await loadIcons(sourcePath);
 	const projector = new (Projector(App))();
