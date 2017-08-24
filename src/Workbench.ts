@@ -8,6 +8,7 @@ import IconCss from './IconCss';
 import { Program } from './project';
 import Runner, { RunnerProperties } from './Runner';
 import TreePane, { TreePaneItem } from './TreePane';
+import Toolbar, { TabItem } from './Toolbar';
 import { IconJson } from './support/icons';
 import * as treepaneCss from './styles/treepane.m.css';
 import * as css from './styles/workbench.m.css';
@@ -56,6 +57,23 @@ export interface WorkbenchProperties extends ThemeableProperties {
 export default class Workbench extends ThemeableBase<WorkbenchProperties> {
 	private _expanded = [ '/', '/src' ];
 	private _selected: string;
+	private _activeFileIndex: number;
+
+	/**
+	 * The files currently open in the editor
+	 */
+	openFiles: string[] = [];
+
+	private get _tabs(): TabItem[] {
+		return this.openFiles.map(filename => {
+			return {
+				closeable: true,
+				disabled: false,
+				key: filename,
+				label: filename.split(/[\/\\]/).pop()!
+			};
+		});
+	}
 
 	private _getTreeRoot(): TreePaneItem | undefined {
 		/**
@@ -117,8 +135,32 @@ export default class Workbench extends ThemeableBase<WorkbenchProperties> {
 
 	private _onItemOpen(id: string) {
 		this._selected = id;
-		const { onFileOpen } = this.properties;
+		const { onFileOpen, files = [] } = this.properties;
+
+		if (includes(files, id)) {
+			if (includes(this.openFiles, id)) {
+				this._activeFileIndex = this.openFiles.indexOf(id);
+			}
+			else {
+				this._activeFileIndex = this.openFiles.push(id) - 1;
+			}
+		}
+
 		onFileOpen && onFileOpen(id);
+		this.invalidate();
+	}
+
+	private _onItemClose(file: TabItem, index: number) {
+		this.openFiles.splice(index, 1);
+		this._activeFileIndex = this._activeFileIndex >= this.openFiles.length ?
+			this.openFiles.length - 1 : this._activeFileIndex === index ?
+			index : this._activeFileIndex ?
+			this._activeFileIndex - 1 : 0;
+		this.invalidate();
+	}
+
+	private _onItemChange(file: TabItem, index: number) {
+		this._activeFileIndex = index;
 		this.invalidate();
 	}
 
@@ -143,7 +185,7 @@ export default class Workbench extends ThemeableBase<WorkbenchProperties> {
 			_expanded,
 			_selected: selected,
 			properties: {
-				filename,
+				// filename,
 				icons,
 				iconsSourcePath: sourcePath,
 				program,
@@ -151,6 +193,8 @@ export default class Workbench extends ThemeableBase<WorkbenchProperties> {
 				onRun
 			}
 		} = this;
+
+		const filename = this.openFiles[this._activeFileIndex];
 
 		const runnerProperties: RunnerProperties = assign({}, program, { key: 'runner', theme, onRun });
 
@@ -163,6 +207,17 @@ export default class Workbench extends ThemeableBase<WorkbenchProperties> {
 				key: 'icons',
 				sourcePath
 			}),
+			v('div', {
+			}, [
+				w(Toolbar, {
+					activeIndex: this._activeFileIndex,
+					tabs: this._tabs,
+					sourcePath,
+					icons,
+					onRequestTabClose: this._onItemClose,
+					onRequestTabChange: this._onItemChange
+				})
+			]),
 			v('div', {
 				classes: this.classes(css.filetree)
 			}, [
