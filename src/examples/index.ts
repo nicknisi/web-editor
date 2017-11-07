@@ -5,7 +5,7 @@ import Projector from '@dojo/widget-core/mixins/Projector';
 import WidgetBase from '@dojo/widget-core/WidgetBase';
 import project, { Program } from '../project';
 import Workbench from '../Workbench';
-import { loadTheme } from '../support/monaco';
+import { loadMonaco, loadTheme } from '../support/monaco';
 import { IconJson, load as loadIcons } from '../support/icons';
 import darkTheme from '../themes/dark/theme';
 
@@ -22,11 +22,23 @@ let icons: IconJson;
 class App extends WidgetBase {
 	private _compiling = false;
 	private _editorFilename = '';
-	private _emptyModel: monaco.editor.IModel = monaco.editor.createModel('');
+	private _emptyModel: monaco.editor.IModel; // = monaco.editor.createModel('');
 	private _openFiles = new Set<string>();
 	private _program: Program | undefined;
 	private _projectDirty = true;
 	private _projectValue = '005-initial.project.json';
+
+	constructor() {
+		super();
+		loadMonaco({
+			basePath: '..',
+			proxyPath: '../support/worker-proxy.js',
+			loaderPath: '../vs/loader.js'
+		}).then(() => {
+			console.log('%cmonaco loaded', 'font-weight:bold;color:green;');
+			this._emptyModel = monaco.editor.createModel('');
+		});
+	}
 
 	/**
 	 * Handle when the project name changes in the dropdown
