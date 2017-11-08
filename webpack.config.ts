@@ -49,13 +49,9 @@ const cssModuleLoader = ExtractTextPlugin.extract({
 const webpackConfig = (env: any = {}, args: any) => {
 	return {
 		entry: {
-			main: [
-				// './src/main.css',
-				'./src/main.ts'
-			],
+			'main': './src/main.ts',
 			'support/providers/amdRequire': './src/support/providers/amdRequire.ts',
-			'support/worker-proxy': './src/support/worker-proxy.ts',
-			'examples/index': './src/examples/index.ts'
+			'support/worker-proxy': './src/support/worker-proxy.ts'
 		},
 		output: {
 			libraryTarget: 'umd',

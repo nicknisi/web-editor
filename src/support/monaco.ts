@@ -5,7 +5,7 @@ import WidgetBase from '@dojo/widget-core/WidgetBase';
 import { WidgetProperties } from '@dojo/widget-core/interfaces';
 import { v } from '@dojo/widget-core/d';
 
-type Monaco = typeof monaco;
+export type Monaco = typeof monaco;
 
 export interface ThemeJson {
 	name: string;
